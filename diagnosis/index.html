@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한국어 읽기 진단 1·2단계</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Jua&display=swap">
+<style>
+/* 아이가 자기 휴대폰으로 혼자 푸는 진단. 한 화면에 한 문제, 러시아어 안내를 함께. 선생님 화면은 결과 코드를 모아 보는 곳 */
+:root{
+  --paper:#F4F6F8;
+  --card:#FFFFFF;
+  --ink:#1D2430;
+  --muted:#5A6472;
+  --line:#CDD4DD;
+  --accent:#2F5D8A;
+  --accent-soft:#E2EBF5;
+  --ok:#2E7D4F;
+  --warn:#B4532A;
+  --warn-soft:#FBEDE6;
+  --display:'Jua','Noto Sans KR',sans-serif;
+  --body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;word-break:keep-all;overflow-wrap:break-word}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--accent);color:#fff;font-size:14px}
+.bar.teacher{background:#E6E9ED;color:var(--muted);border-bottom:1px solid var(--line)}
+.prog{flex:1;max-width:260px;height:8px;background:rgba(255,255,255,.3);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:#fff}
+main{max-width:860px;margin:0 auto;padding:20px 16px 130px;display:flex;flex-direction:column;gap:18px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:32px}
+h2{font-size:26px}
+h3{margin:0;font-size:19px}
+p{margin:0}
+.ru{color:#36506B;font-size:17px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.card.ru-first{border-left:6px solid var(--accent)}
+.note{font-size:15px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{min-height:50px;padding:10px 20px;border-radius:12px;border:1.5px solid var(--accent);background:var(--card);color:var(--accent);font-weight:700}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{border-color:var(--warn);color:var(--warn)}
+.btn.skip{border-color:var(--line);color:var(--muted)}
+.btn.skip[aria-pressed=true]{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.btn:disabled{opacity:.4;cursor:default}
+.linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;padding:8px 0;font-size:14px;align-self:flex-start}
+.foot{position:fixed;left:0;right:0;bottom:0;background:rgba(244,246,248,.97);border-top:1px solid var(--line);padding:10px 16px}
+.foot .in{max-width:860px;margin:0 auto;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:500}
+input[type=text],textarea{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-height:50px;font-size:18px}
+textarea{min-height:120px;resize:vertical;font-size:15px;width:100%}
+ul.rules{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.passage{font-size:28px;line-height:2;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:20px 22px}
+.q{font-size:24px;font-weight:700;line-height:1.45;flex:1;min-width:240px}
+.qid{display:inline-block;font-size:14px;color:var(--accent);font-weight:700;margin-right:8px}
+.sent{font-size:25px;line-height:1.7;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:14px 18px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.choice{position:relative;min-height:160px;border:2px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;padding:26px 8px 8px}
+.choice .n{position:absolute;top:6px;left:10px;font-size:20px;font-weight:700}
+.choice img{max-width:100%;height:130px;object-fit:contain}
+.choice svg{width:170px;height:128px}
+.choice .t{font-size:26px;font-weight:700}
+.choice.textonly{min-height:84px}
+.choice.textonly .t{font-size:22px}
+.choice[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);background:#F7FAFD}
+.speak{display:inline-flex;align-items:center;gap:8px}
+.speak svg{width:22px;height:22px}
+.bigplay{min-height:90px;font-size:22px;padding:14px 28px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tile .k{font-size:14px;color:var(--muted)}
+.tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:14px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:#E3F2E9;color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500}
+.wrap{overflow-x:auto}
+.item{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;min-height:56px;flex-wrap:wrap}
+.status{font-size:14px;color:var(--muted)}
+.dialog{position:fixed;inset:0;background:rgba(29,36,48,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.dialog .card{max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.done-mark{width:72px;height:72px;border-radius:50%;background:#E3F2E9;color:var(--ok);display:flex;align-items:center;justify-content:center}
+@media (max-width:560px){
+  .choice{min-height:130px}
+  .choice img{height:100px}
+  .choice svg{width:130px;height:98px}
+  .q{font-size:21px}
+  .sent{font-size:21px}
+  .passage{font-size:23px}
+  h1{font-size:27px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="bar" class="bar"></div>
+<main id="app"></main>
+<div id="foot" class="foot" hidden><div class="in" id="footin"></div></div>
+<div id="dlg"></div>
+<script>
+/* ===== 설정: Apps Script 웹 앱 주소를 여기에 붙여 넣으세요 ===== */
+const SCRIPT_URL = 'PASTE_APPS_SCRIPT_URL_HERE';
+/* ============================================================== */
+
+const DATA = {"items": [{"id": "R-1", "area": "r", "q": "무슨 색 우산을 썼어요?", "o": [{"text": "파란색"}, {"text": "빨간색"}, {"text": "노란색"}, {"text": "초록색"}], "a": 2, "w": {}, "d": "짧은 글의 내용을 기억하지 못함"}, {"id": "R-2", "area": "r", "q": "누구를 만났어요?", "o": [{"text": "선생님"}, {"text": "친구"}, {"text": "엄마"}, {"text": "동생"}], "a": 1, "w": {}, "d": "짧은 글의 내용을 기억하지 못함"}, {"id": "B-1", "area": "v", "q": "‘지우개’를 고르세요.", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><g transform=\"translate(80 60) rotate(-25) scale(1)\"><rect x=\"-40\" y=\"-7\" width=\"64\" height=\"14\" fill=\"#F6C344\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-48\" y=\"-7\" width=\"8\" height=\"14\" fill=\"#F4A3A3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"24,-7 40,0 24,7\" fill=\"#F5DEB3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"35,-2.2 40,0 35,2.2\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><g transform=\"translate(78 60) rotate(0) scale(1)\"><polygon points=\"-6,-5 48,4 -2,3\" fill=\"#D9DDE3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"-6,5 48,-4 -2,-3\" fill=\"#D9DDE3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-20\" cy=\"-12\" r=\"11\" fill=\"#E74C3C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-20\" cy=\"12\" r=\"11\" fill=\"#E74C3C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-20\" cy=\"-12\" r=\"5\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-20\" cy=\"12\" r=\"5\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"2\" cy=\"0\" r=\"2.5\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><g transform=\"translate(80 62) rotate(-10) scale(1)\"><rect x=\"-32\" y=\"-15\" width=\"64\" height=\"30\" rx=\"5\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-4\" y=\"-15\" width=\"36\" height=\"30\" fill=\"#6FA8DC\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"14\" y=\"46\" width=\"132\" height=\"28\" rx=\"3\" fill=\"#F6D776\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M22 46 L22 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M32 46 L32 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M42 46 L42 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M52 46 L52 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M62 46 L62 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M72 46 L72 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M82 46 L82 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M92 46 L92 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M102 46 L102 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M112 46 L112 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M122 46 L122 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M132 46 L132 53\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M142 46 L142 58\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>"}], "a": 2, "w": {}, "d": "학용품 이름을 모름"}, {"id": "B-2", "area": "v", "q": "‘칠판’을 고르세요.", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"10\" y=\"12\" width=\"140\" height=\"84\" rx=\"4\" fill=\"#8B5A2B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"19\" y=\"21\" width=\"122\" height=\"66\" fill=\"#2F6B4F\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M32 44 Q44 34 56 44 T80 44\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"2.5\" stroke-linecap=\"round\"/><path d=\"M32 64 L96 64\" stroke=\"#FFFFFF\" stroke-width=\"2.5\" stroke-linecap=\"round\"/><rect x=\"14\" y=\"96\" width=\"132\" height=\"7\" fill=\"#8B5A2B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"32\" y=\"12\" width=\"96\" height=\"88\" fill=\"#DCEFFB\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M80 12 L80 100 M32 56 L128 56\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\" fill=\"none\"/><rect x=\"26\" y=\"100\" width=\"108\" height=\"7\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"20\" y=\"52\" width=\"120\" height=\"12\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"28\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"123\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"34\" y=\"10\" width=\"92\" height=\"98\" fill=\"#A7C7E7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"38\" y=\"14.0\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"70\" cy=\"26.0\" r=\"2.2\" fill=\"#2B2B2B\"/><rect x=\"84\" y=\"14.0\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"116\" cy=\"26.0\" r=\"2.2\" fill=\"#2B2B2B\"/><rect x=\"38\" y=\"46.7\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"70\" cy=\"58.7\" r=\"2.2\" fill=\"#2B2B2B\"/><rect x=\"84\" y=\"46.7\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"116\" cy=\"58.7\" r=\"2.2\" fill=\"#2B2B2B\"/><rect x=\"38\" y=\"79.4\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"70\" cy=\"91.4\" r=\"2.2\" fill=\"#2B2B2B\"/><rect x=\"84\" y=\"79.4\" width=\"38\" height=\"25\" fill=\"#C9DDF2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"116\" cy=\"91.4\" r=\"2.2\" fill=\"#2B2B2B\"/></svg>"}], "a": 0, "w": {}, "d": "교실 말을 모름"}, {"id": "B-3", "area": "v", "q": "‘줄을 서다’에 알맞은 그림을 고르세요.", "o": [{"img": "../img/circle.jpg"}, {"img": "../img/jumprope.jpg"}, {"img": "../img/drawline.jpg"}, {"img": "../img/line.jpg"}], "a": 3, "w": {"1": "‘줄’의 다른 뜻(줄넘기)과 헷갈림", "2": "‘줄’의 다른 뜻(줄 긋기)과 헷갈림"}, "d": "‘줄을 서다’를 모름"}, {"id": "B-4", "area": "v", "q": "‘손을 들다’에 알맞은 그림을 고르세요.", "o": [{"img": "../img/washhands.jpg"}, {"img": "../img/raisehand.jpg"}, {"img": "../img/bag.jpg"}, {"img": "../img/wave.jpg"}], "a": 1, "w": {"2": "‘들다’의 다른 뜻(가방을 들다)과 헷갈림"}, "d": "‘손을 들다’를 모름"}, {"id": "B-5", "area": "v", "q": "‘숙제를 하다’에 알맞은 그림을 고르세요.", "o": [{"img": "../img/playground.jpg"}, {"img": "../img/lunch.jpg"}, {"img": "../img/homework.jpg"}, {"img": "../img/bus.jpg"}], "a": 2, "w": {}, "d": "학교생활 말을 모름"}, {"id": "B-6", "area": "s", "q": "연필을 책상 위에 놓으세요. 바르게 한 그림은?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"20\" y=\"52\" width=\"120\" height=\"12\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"28\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"123\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 96) rotate(0) scale(0.8)\"><rect x=\"-40\" y=\"-7\" width=\"64\" height=\"14\" fill=\"#F6C344\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-48\" y=\"-7\" width=\"8\" height=\"14\" fill=\"#F4A3A3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"24,-7 40,0 24,7\" fill=\"#F5DEB3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"35,-2.2 40,0 35,2.2\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"20\" y=\"52\" width=\"120\" height=\"12\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"28\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"123\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 44) rotate(0) scale(0.8)\"><rect x=\"-40\" y=\"-7\" width=\"64\" height=\"14\" fill=\"#F6C344\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-48\" y=\"-7\" width=\"8\" height=\"14\" fill=\"#F4A3A3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"24,-7 40,0 24,7\" fill=\"#F5DEB3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"35,-2.2 40,0 35,2.2\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"20\" y=\"52\" width=\"120\" height=\"12\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"28\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"123\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(84 34) rotate(-8) scale(0.75)\"><rect x=\"-40\" y=\"-7\" width=\"64\" height=\"14\" fill=\"#F6C344\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-48\" y=\"-7\" width=\"8\" height=\"14\" fill=\"#F4A3A3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"24,-7 40,0 24,7\" fill=\"#F5DEB3\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"35,-2.2 40,0 35,2.2\" fill=\"#2B2B2B\"/></g><rect x=\"44\" y=\"30\" width=\"76\" height=\"24\" rx=\"12\" fill=\"#9AD0C2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M56 30 L108 30\" stroke=\"#2B2B2B\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"20\" y=\"52\" width=\"120\" height=\"12\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"28\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"123\" y=\"64\" width=\"9\" height=\"42\" fill=\"#B07A44\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 42) rotate(-10) scale(0.75)\"><rect x=\"-32\" y=\"-15\" width=\"64\" height=\"30\" rx=\"5\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"-4\" y=\"-15\" width=\"36\" height=\"30\" fill=\"#6FA8DC\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></g></svg>"}], "a": 1, "w": {"0": "‘위·아래’를 헷갈림", "3": "물건 이름(연필)을 놓침"}, "d": "한 문장 지시를 따르지 못함"}, {"id": "B-7", "area": "s", "q": "공책을 펴세요. 바르게 한 그림은?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"40\" y=\"20\" width=\"80\" height=\"84\" rx=\"3\" fill=\"#7EB6E8\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M50 20 L50 104\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"62\" y=\"38\" width=\"46\" height=\"16\" rx=\"2\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"58\" y=\"12\" width=\"40\" height=\"34\" fill=\"#7EB6E8\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M66 20 L66 46\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M64 30 Q80 14 96 30\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"40\" y=\"30\" width=\"80\" height=\"78\" rx=\"16\" fill=\"#E07A5F\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"54\" y=\"66\" width=\"52\" height=\"30\" rx=\"8\" fill=\"#F2A48F\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"8\" y=\"22\" width=\"144\" height=\"84\" rx=\"3\" fill=\"#E07A5F\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"12\" y=\"20\" width=\"68\" height=\"80\" fill=\"#FFF8E6\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"80\" y=\"20\" width=\"68\" height=\"80\" fill=\"#FFF8E6\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"20\" y=\"28\" width=\"52\" height=\"38\" fill=\"#BFE3C0\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"24,62 40,42 52,62\" fill=\"#7DBB7F\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"60\" cy=\"38\" r=\"6\" fill=\"#F6C344\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M20 76 L72 76 M20 86 L60 86 M88 32 L140 32 M88 42 L132 42\" stroke=\"#9AA0A6\" stroke-width=\"4\"/><rect x=\"88\" y=\"52\" width=\"52\" height=\"38\" fill=\"#F9D3C5\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"114\" cy=\"71\" r=\"10\" fill=\"#E74C3C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"12\" y=\"24\" width=\"68\" height=\"76\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"80\" y=\"24\" width=\"68\" height=\"76\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M18 38 L74 38 M86 38 L142 38\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/><path d=\"M18 48 L74 48 M86 48 L142 48\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/><path d=\"M18 58 L74 58 M86 58 L142 58\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/><path d=\"M18 68 L74 68 M86 68 L142 68\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/><path d=\"M18 78 L74 78 M86 78 L142 78\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/><path d=\"M18 88 L74 88 M86 88 L142 88\" stroke=\"#8EC1EA\" stroke-width=\"1.6\"/></svg>"}], "a": 3, "w": {"0": "‘펴다·덮다’를 헷갈림", "2": "‘공책·교과서’를 헷갈림"}, "d": "한 문장 지시를 따르지 못함"}, {"id": "B-8", "area": "s", "q": "토끼가 의자 밑에 있어요. 알맞은 그림은?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"50\" y=\"22\" width=\"9\" height=\"84\" rx=\"2\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"50\" y=\"60\" width=\"62\" height=\"9\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"103\" y=\"69\" width=\"9\" height=\"37\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 95) rotate(0) scale(1)\"><ellipse cx=\"0\" cy=\"0\" rx=\"14\" ry=\"11\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-14\" cy=\"-1\" r=\"3.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"9\" cy=\"-27\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"16\" cy=\"-26\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"12\" cy=\"-11\" r=\"8.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"15\" cy=\"-12\" r=\"1.4\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"50\" y=\"22\" width=\"9\" height=\"84\" rx=\"2\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"50\" y=\"60\" width=\"62\" height=\"9\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"103\" y=\"69\" width=\"9\" height=\"37\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 49) rotate(0) scale(1)\"><ellipse cx=\"0\" cy=\"0\" rx=\"14\" ry=\"11\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-14\" cy=\"-1\" r=\"3.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"9\" cy=\"-27\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"16\" cy=\"-26\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"12\" cy=\"-11\" r=\"8.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"15\" cy=\"-12\" r=\"1.4\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"50\" y=\"22\" width=\"9\" height=\"84\" rx=\"2\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"50\" y=\"60\" width=\"62\" height=\"9\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"103\" y=\"69\" width=\"9\" height=\"37\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(136 95) rotate(0) scale(1)\"><ellipse cx=\"0\" cy=\"0\" rx=\"14\" ry=\"11\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"-14\" cy=\"-1\" r=\"3.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"9\" cy=\"-27\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"16\" cy=\"-26\" rx=\"3.5\" ry=\"10\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"12\" cy=\"-11\" r=\"8.5\" fill=\"#F7F7F7\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"15\" cy=\"-12\" r=\"1.4\" fill=\"#2B2B2B\"/></g></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"50\" y=\"22\" width=\"9\" height=\"84\" rx=\"2\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"50\" y=\"60\" width=\"62\" height=\"9\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"103\" y=\"69\" width=\"9\" height=\"37\" fill=\"#C8935A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M6 106 L154 106\" stroke=\"#9AA0A6\" stroke-width=\"2\"/><g transform=\"translate(80 96) rotate(0) scale(1)\"><path d=\"M-14 0 Q-26 -6 -22 -20\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"0\" cy=\"0\" rx=\"15\" ry=\"10\" fill=\"#F2B36B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"6,-14 8,-25 13,-16\" fill=\"#F2B36B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"15,-16 21,-25 21,-13\" fill=\"#F2B36B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"13\" cy=\"-10\" r=\"8.5\" fill=\"#F2B36B\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"16\" cy=\"-11\" r=\"1.4\" fill=\"#2B2B2B\"/></g></svg>"}], "a": 0, "w": {"1": "위치어 ‘밑·위’를 헷갈림", "2": "위치어 ‘밑·옆’을 헷갈림", "3": "동물 이름(토끼)을 놓침"}, "d": "위치어를 모름"}, {"id": "B-9", "area": "s", "q": "민지는 사과를 먹었어요. 민지는 무엇을 먹었어요?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M28 66 Q80 104 132 48 Q128 44 122 48 Q80 86 34 58 Z\" fill=\"#F7D44C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M122 48 L128 40\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M28 90 L28 58 Q28 32 80 32 Q132 32 132 58 L132 90 Z\" fill=\"#E3A869\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M56 48 L66 62 M78 46 L88 60 M100 48 L110 62\" stroke=\"#B9773A\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M80 40 Q76 30 72 26\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"90\" cy=\"30\" rx=\"10\" ry=\"5\" fill=\"#6DBE5A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\" transform=\"rotate(-25 90 30)\"/><circle cx=\"80\" cy=\"70\" r=\"32\" fill=\"#E74C3C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"56\" y=\"42\" width=\"48\" height=\"62\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"56,42 80,22 104,42\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"56\" y=\"62\" width=\"48\" height=\"18\" fill=\"#5DADE2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}], "a": 2, "w": {}, "d": "문장에서 정보를 찾지 못함"}, {"id": "B-10", "area": "s", "q": "선생님이 칠판에 이름을 써요. 누가 이름을 써요?", "o": [{"text": "친구"}, {"text": "선생님"}, {"text": "나"}, {"text": "엄마"}], "a": 1, "w": {}, "d": "‘이/가’로 행동한 사람을 찾지 못함"}, {"id": "L-1", "area": "L", "sent": "민수가 공을 찼어요.", "q": "누가 공을 찼어요?", "o": [{"text": "공"}, {"text": "민수"}, {"text": "친구"}, {"text": "선생님"}], "a": 1, "w": {"0": "‘을/를’이 붙은 말을 행동한 사람으로 읽음"}, "d": "기본 문장(누가–무엇을–했다)", "st": "기본 문장"}, {"id": "L-2", "area": "L", "sent": "민수가 운동장에서 공을 찼어요.", "q": "어디에서 공을 찼어요?", "o": [{"text": "교실"}, {"text": "집"}, {"text": "공원"}, {"text": "운동장"}], "a": 3, "w": {}, "d": "장소 ‘-에서’를 찾지 못함", "st": "장소 ‘-에서’"}, {"id": "L-3", "area": "L", "sent": "점심을 먹은 민수가 운동장에서 친구와 공을 찼어요.", "q": "민수는 공을 차기 전에 무엇을 했어요?", "o": [{"text": "친구를 기다렸어요."}, {"text": "공을 샀어요."}, {"text": "점심을 먹었어요."}, {"text": "운동장을 청소했어요."}], "a": 2, "w": {"0": "‘-와’를 순서로 잘못 읽음", "1": "문장에 없는 내용을 고름", "3": "문장에 없는 내용을 고름"}, "d": "꾸며 주는 말 ‘점심을 먹은’과 ‘-기 전에’를 이해하지 못함", "st": "꾸며 주는 말 ‘점심을 먹은’, ‘-와’, ‘-기 전에’"}, {"id": "L-4", "area": "L", "sent": "점심을 먹고 운동장에 나간 민수는 지우가 던져 준 공을 골대를 향해 힘껏 찼어요.", "q": "공을 던져 준 사람은 누구예요?", "o": [{"text": "지우"}, {"text": "민수"}, {"text": "선생님"}, {"text": "알 수 없어요."}], "a": 0, "w": {"1": "문장의 주인공과 꾸미는 말 속 행동한 사람을 헷갈림"}, "d": "긴 꾸며 주는 말 속 관계를 찾지 못함", "st": "이어진 행동 ‘먹고 나간’, 다른 사람의 행동이 꾸미는 말 ‘지우가 던져 준 공’"}, {"id": "H-1", "area": "H", "story": "g", "q": "무엇을 마셨어요?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"#F4FAFD\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"57,44 103,44 98,104 62,104\" fill=\"#F5A623\"/><path d=\"M92 14 L84 60\" stroke=\"#E74C3C\" stroke-width=\"4\" stroke-linecap=\"round\"/><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"#F4FAFD\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"57,44 103,44 98,104 62,104\" fill=\"#BFE3F5\"/><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><rect x=\"56\" y=\"42\" width=\"48\" height=\"62\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"56,42 80,22 104,42\" fill=\"#FFFFFF\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><rect x=\"56\" y=\"62\" width=\"48\" height=\"18\" fill=\"#5DADE2\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"#F4FAFD\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polygon points=\"57,44 103,44 98,104 62,104\" fill=\"#5B3A29\"/><circle cx=\"72\" cy=\"70\" r=\"3\" fill=\"#FFFFFF\"/><circle cx=\"86\" cy=\"84\" r=\"2.5\" fill=\"#FFFFFF\"/><circle cx=\"80\" cy=\"58\" r=\"2\" fill=\"#FFFFFF\"/><polygon points=\"54,26 106,26 98,106 62,106\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}], "a": 2, "w": {}, "d": ""}, {"id": "H-2", "area": "H", "story": "g", "q": "누구와 함께 공원에 갔어요?", "o": [{"img": "../img/dad.jpg"}, {"img": "../img/mom.jpg"}, {"img": "../img/friend.jpg"}, {"img": "../img/grandma.jpg"}], "a": 1, "w": {}, "d": ""}, {"id": "H-3", "area": "H", "story": "n", "q": "무엇을 먹었어요?", "o": [{"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M28 66 Q80 104 132 48 Q128 44 122 48 Q80 86 34 58 Z\" fill=\"#F7D44C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M122 48 L128 40\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M28 90 L28 58 Q28 32 80 32 Q132 32 132 58 L132 90 Z\" fill=\"#E3A869\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><path d=\"M56 48 L66 62 M78 46 L88 60 M100 48 L110 62\" stroke=\"#B9773A\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><circle cx=\"80\" cy=\"68\" r=\"28\" fill=\"#F39C12\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"86\" cy=\"38\" rx=\"9\" ry=\"4.5\" fill=\"#6DBE5A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"80\" cy=\"42\" r=\"3\" fill=\"#6DBE5A\"/></svg>"}, {"svg": "<svg viewBox=\"0 0 160 120\" aria-hidden=\"true\"><path d=\"M80 40 Q76 30 72 26\" fill=\"none\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><ellipse cx=\"90\" cy=\"30\" rx=\"10\" ry=\"5\" fill=\"#6DBE5A\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\" transform=\"rotate(-25 90 30)\"/><circle cx=\"80\" cy=\"70\" r=\"32\" fill=\"#E74C3C\" stroke=\"#2B2B2B\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/></svg>"}], "a": 3, "w": {}, "d": ""}, {"id": "H-4", "area": "H", "story": "n", "q": "누구와 함께 책을 읽었어요?", "o": [{"img": "../img/dad.jpg"}, {"img": "../img/mom.jpg"}, {"img": "../img/sibling.jpg"}, {"img": "../img/teacher.jpg"}], "a": 0, "w": {}, "d": ""}, {"id": "H-5", "area": "H", "story": "d", "q": "무엇을 했어요?", "o": [{"img": "../img/swim.jpg"}, {"img": "../img/soccer.jpg"}, {"img": "../img/jumprope.jpg"}, {"img": "../img/bike.jpg"}], "a": 1, "w": {}, "d": ""}, {"id": "H-6", "area": "H", "story": "d", "q": "누구와 함께 라면을 먹었어요?", "o": [{"img": "../img/teen_girl.jpg"}, {"img": "../img/dad.jpg"}, {"img": "../img/friend.jpg"}, {"img": "../img/teen_boy.jpg"}], "a": 3, "w": {}, "d": ""}, {"id": "H-7", "area": "H", "story": "r", "q": "무엇을 했어요?", "o": [{"img": "../img/drawing.jpg"}, {"img": "../img/reading.jpg"}, {"img": "../img/singing.jpg"}, {"img": "../img/sweep.jpg"}], "a": 0, "w": {}, "d": ""}, {"id": "H-8", "area": "H", "story": "r", "q": "누구와 함께 빵을 만들었어요?", "o": [{"img": "../img/mom.jpg"}, {"img": "../img/sibling.jpg"}, {"img": "../img/teen_girl.jpg"}, {"img": "../img/grandma.jpg"}], "a": 2, "w": {}, "d": ""}], "stories": {"g": "지호는 아침에 우유를 마셨어요. 그리고 엄마와 함께 공원에 갔어요.", "n": "수아는 저녁에 사과를 먹었어요. 그리고 아빠와 함께 책을 읽었어요.", "d": "민호는 토요일에 축구를 했어요. 그리고 형과 함께 라면을 먹었어요.", "r": "하나는 일요일에 그림을 그렸어요. 그리고 언니와 함께 빵을 만들었어요."}};
+const ITEMS = Object.fromEntries(DATA.items.map(i => [i.id, i]));
+const NUM = ['①','②','③','④'];
+const GROUPS = ['받침 없음','받침 있음','소리가 바뀌는 낱말'];
+const PASSAGE = '오늘은 비가 와요. 나는 노란 우산을 썼어요. 학교에 가는 길에 친구를 만났어요. 우리는 같이 걸어갔어요.';
+const CARD_WORDS = ['나무','바다','모자','우유','기차','가방','연필','책상','학교','운동장','읽기','같이','앉다','국물','많이'];
+const ORDER = ['R-1','R-2','B-1','B-2','B-3','B-4','B-5','B-6','B-7','B-8','B-9','B-10','L-1','L-2','L-3','L-4','H-1','H-2','H-3','H-4','H-5','H-6','H-7','H-8'];
+const SPK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg>';
+const SKIP = -1;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const configured = () => /^https:\/\/script\.google\.com\//.test(SCRIPT_URL);
+
+let S = null, steps = [], si = 0;
+let mode = location.hash === '#teacher' ? 'teacher' : 'student';
+let tview = 'list', curReport = null;
+
+function fresh(){
+  return { id: 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name:'', version: Math.random()<0.5?'A':'B', started:Date.now(),
+    readStart:null, readSec:null, ans:{}, plays:{}, noSound:{}, recheck:false, sent:false };
+}
+
+/* ---------- 소리 (기기의 한국어 음성) ---------- */
+function say(text){
+  try{
+    if('speechSynthesis' in window){
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.rate=0.85;
+      const v = speechSynthesis.getVoices().find(v => /ko/i.test(v.lang)); if(v) u.voice = v;
+      speechSynthesis.speak(u); return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* ---------- 순서 ---------- */
+const idsOf = story => DATA.items.filter(i => i.story===story).map(i => i.id);
+function buildSteps(){
+  const listen = S.version==='A' ? 'g' : 'n', read = S.version==='A' ? 'n' : 'g';
+  const st = [{k:'welcome'},{k:'readintro1'},{k:'passage'}];
+  ['R-1','R-2'].forEach(id => st.push({k:'item',id}));
+  st.push({k:'part',t:'pic'});
+  ['B-1','B-2','B-3','B-4','B-5','B-6','B-7','B-8','B-9','B-10'].forEach(id => st.push({k:'item',id}));
+  st.push({k:'part',t:'sent'});
+  ['L-1','L-2','L-3','L-4'].forEach(id => st.push({k:'item',id}));
+  st.push({k:'part',t:'listen'});
+  st.push({k:'listen',story:listen});
+  idsOf(listen).forEach(id => st.push({k:'item',id,mode:'listen'}));
+  st.push({k:'story',story:read});
+  idsOf(read).forEach(id => st.push({k:'item',id,mode:'read'}));
+  st.push({k:'checkpoint'});
+  st.push({k:'finish'});
+  return st;
+}
+function addRecheck(){
+  const at = steps.findIndex(s => s.k==='checkpoint');
+  const ex = [{k:'part',t:'more'},{k:'listen',story:'d'}];
+  idsOf('d').forEach(id => ex.push({k:'item',id,mode:'listen'}));
+  ex.push({k:'story',story:'r'});
+  idsOf('r').forEach(id => ex.push({k:'item',id,mode:'read'}));
+  steps.splice(at+1,0,...ex);
+}
+
+/* ---------- 공통 ---------- */
+function setBar(label){
+  const bar = $('#bar');
+  if(mode==='teacher'){ bar.className='bar teacher'; bar.innerHTML='<span><b>선생님 화면</b> · '+esc(label)+'</span>'; return; }
+  bar.className='bar';
+  const pct = steps.length ? Math.round(si/(steps.length-1)*100) : 0;
+  bar.innerHTML = '<span>'+esc(label)+'</span><span class="prog" aria-hidden="true"><i style="width:'+pct+'%"></i></span>';
+}
+function setFoot(left, right){
+  const f = $('#foot');
+  if(!left && !right){ f.hidden = true; return; }
+  f.hidden = false;
+  $('#footin').innerHTML = '<div class="row">'+(left||'')+'</div><div class="row">'+(right||'')+'</div>';
+}
+function showDialog(title, html, actions){
+  $('#dlg').innerHTML = '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgt"><div class="card"><h3 id="dlgt">'+esc(title)+'</h3><div>'+html+'</div><div class="row" style="justify-content:flex-end">'+(actions||'<button class="btn primary" data-act="dlgclose">닫기 · Закрыть</button>')+'</div></div></div>';
+}
+function closeDialog(){ $('#dlg').innerHTML=''; }
+const prevBtn = () => '<button class="btn" data-act="prev"'+(si===0?' disabled':'')+'>이전 · Назад</button>';
+const nextBtn = (ok=true, label='다음 · Дальше') => '<button class="btn primary" data-act="next"'+(ok?'':' disabled')+'>'+label+'</button>';
+
+function render(){
+  if(mode==='teacher') return renderTeacher();
+  if(!S){ S = fresh(); steps = buildSteps(); si = 0; }
+  STU[steps[si].k]($('#app'), steps[si]);
+  window.scrollTo(0,0);
+}
+
+/* ---------- 학생 화면 ---------- */
+const STU = {
+  welcome(app){
+    setBar('시작 · Начало');
+    app.innerHTML = `
+    <h1>한국어 읽기 확인<br><span class="ru" style="font-size:22px">Проверка чтения по-корейски</span></h1>
+    <div class="card ru-first" lang="ru">
+      <p style="font-size:19px"><b>Привет! Это не экзамен, и оценок здесь нет.</b></p>
+      <p>Мы хотим узнать, что ты уже знаешь по-корейски, чтобы подобрать занятия именно для тебя.</p>
+      <ul class="rules">
+        <li>Отвечай честно и сам(а): без помощи, без переводчика и без подсказок.</li>
+        <li>Если не знаешь ответ, нажми <b>«모르겠어요 · Не знаю»</b> и иди дальше. Это нормально!</li>
+        <li>Не угадывай. Честное «Не знаю» помогает нам больше, чем случайный ответ.</li>
+        <li>Включи звук: в одной части нужно слушать.</li>
+        <li>Это займёт примерно 20 минут. В конце нажми «Отправить».</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p><b>안녕하세요! 이것은 시험이 아니에요. 점수도 없어요.</b></p>
+      <ul class="rules">
+        <li>혼자서 정직하게 풀어요. 번역기나 다른 사람의 도움 없이요.</li>
+        <li>모르면 <b>[모르겠어요]</b>를 누르고 넘어가요. 괜찮아요!</li>
+        <li>찍지 마세요. 정직하게 “모르겠어요”라고 해야 나에게 맞는 공부를 찾을 수 있어요.</li>
+        <li>소리를 켜 주세요. 듣는 문제가 있어요.</li>
+      </ul>
+    </div>
+    <label class="f" for="nm">이름을 한글로 쓰세요 · Напиши своё имя по-корейски (хангылем)<input id="nm" type="text" autocomplete="off" value="${esc(S.name)}"></label>
+    <button class="linkbtn" data-act="teacher">선생님 화면</button>`;
+    setFoot('', nextBtn(true,'시작 · Начать'));
+  },
+  readintro1(app){
+    setBar('글 읽기 · Чтение');
+    app.innerHTML = `<h2>짧은 글을 읽어요<br><span class="ru" style="font-size:20px">Короткий текст</span></h2>
+      <div class="card ru-first"><p class="ru">Сейчас появится короткий текст. Прочитай его <b>про себя</b> один раз. Когда закончишь, нажми «다 읽었어요 · Я прочитал(а)». Потом текста не будет видно, и будут вопросы.</p>
+      <p>짧은 글이 나와요. 속으로 한 번 읽고 [다 읽었어요]를 눌러요. 그다음 글을 보지 않고 질문에 답해요.</p></div>`;
+    setFoot(prevBtn(), nextBtn(true,'글 보기 · Показать текст'));
+  },
+  passage(app){
+    setBar('글 읽기 · Чтение');
+    S.readStart = Date.now(); S.readSec = null;
+    app.innerHTML = `<div class="passage">${esc(PASSAGE)}</div>`;
+    setFoot('', '<button class="btn primary" data-act="readdone">다 읽었어요 · Я прочитал(а)</button>');
+  },
+  part(app, st){
+    const P = {
+      pic:['그림 문제','Картинки','그림을 보고 알맞은 것을 눌러요.','Посмотри на картинки и нажми на правильную.'],
+      sent:['문장 문제','Предложения','문장을 읽고 알맞은 답을 눌러요.','Прочитай предложение и нажми на ответ.'],
+      listen:['듣기와 읽기','Слушать и читать','먼저 이야기를 듣고 답해요. 그다음 이야기를 읽고 답해요.','Сначала послушай историю и ответь. Потом прочитай другую историю и ответь.'],
+      more:['조금만 더','Ещё немного','이야기 두 개만 더 해요.','Ещё две короткие истории.']
+    }[st.t];
+    setBar(P[0]+' · '+P[1]);
+    app.innerHTML = `<h1>${P[0]}<br><span class="ru" style="font-size:22px">${P[1]}</span></h1>
+      <div class="card ru-first"><p class="ru">${P[3]}</p><p>${P[2]}</p>
+      <p class="note">모르면 [모르겠어요] · Если не знаешь, нажми «Не знаю».</p></div>
+      ${st.t==='listen' ? `<div class="card"><p><b>먼저 소리를 확인해요.</b> 휴대폰 소리를 켜고 버튼을 눌러요.</p><p class="ru">Сначала включи звук на телефоне и нажми кнопку.</p>
+        <button class="btn speak" data-act="soundtest">${SPK} 소리 확인 · Проверить звук</button></div>` : ''}`;
+    setFoot(prevBtn(), nextBtn());
+  },
+  listen(app, st){
+    setBar('듣기 · Слушать');
+    const n = S.plays[st.story]||0;
+    app.innerHTML = `<h2>이야기를 잘 들어요<br><span class="ru" style="font-size:20px">Слушай внимательно</span></h2>
+      <div class="card ru-first"><p class="ru">Нажми «이야기 듣기 · Слушать» и внимательно послушай два раза.</p>
+      <p>[이야기 듣기]를 누르고 잘 들어요. 두 번 들으면 돼요.</p></div>
+      <div class="row"><button class="btn primary bigplay speak" data-act="play" data-s="${st.story}">${SPK} 이야기 듣기 · Слушать</button>
+      <span class="status">들은 횟수 · Сколько раз: ${n}</span></div>
+      <p class="note">소리가 안 들렸으면 휴대폰 소리를 켜고 다시 눌러요. · Если не слышно, включи звук и нажми ещё раз.</p>
+      <button class="linkbtn" data-act="nosound" data-s="${st.story}">소리가 안 나요 · Нет звука</button>`;
+    setFoot(prevBtn(), nextBtn(n>=1 || S.noSound[st.story], '문제 풀기 · К вопросам'));
+  },
+  story(app, st){
+    setBar('읽기 · Читать');
+    app.innerHTML = `<h2>이야기를 읽어요<br><span class="ru" style="font-size:20px">Прочитай историю</span></h2>
+      <p class="ru">Она будет видна и во время вопросов.</p>
+      <div class="sent">${esc(DATA.stories[st.story])}</div>`;
+    setFoot(prevBtn(), nextBtn());
+  },
+  item(app, st){
+    const it = ITEMS[st.id];
+    const lab = it.area==='r' ? '글 읽기' : it.area==='L' ? '문장' : it.area==='H' ? (st.mode==='listen'?'듣기':'읽기') : '그림';
+    setBar(lab + ' · ' + it.id);
+    const textOnly = it.o.every(o => o.text);
+    let top = '';
+    if(it.sent) top = `<div class="sent">${esc(it.sent)}</div>`;
+    if(st.mode==='read') top = `<div class="sent">${esc(DATA.stories[it.story])}</div>`;
+    const spk = st.mode==='listen' ? `<button class="btn speak" data-act="sayq" data-id="${it.id}">${SPK} 질문 듣기</button>` : '';
+    const a = S.ans[it.id];
+    app.innerHTML = top + `<div class="row" style="justify-content:space-between;align-items:flex-start"><p class="q"><span class="qid">${it.id}</span>${esc(it.q)}</p>${spk}</div>
+      <div class="choices">${it.o.map((o,i)=>`<button class="choice${textOnly?' textonly':''}" data-act="pick" data-i="${i}" aria-pressed="${a===i}" aria-label="${i+1}번">
+        <span class="n">${NUM[i]}</span>${o.svg ? o.svg : o.img ? `<img src="${o.img}" alt="">` : `<span class="t">${esc(o.text)}</span>`}</button>`).join('')}</div>
+      <button class="btn skip" data-act="pick" data-i="-1" aria-pressed="${a===SKIP}">모르겠어요 · Не знаю</button>`;
+    setFoot(prevBtn(), nextBtn(a!=null));
+  },
+  checkpoint(){
+    const sc = score(S);
+    if(sc.mismatch && !S.recheck){ S.recheck = true; addRecheck(); }
+    si++; render();
+  },
+  finish(app){
+    setBar('끝 · Готово');
+    const sentBlock = S.sent
+      ? `<p class="pill ok" style="font-size:16px">보냈어요 · Отправлено</p>`
+      : `<button class="btn primary" data-act="submit" style="min-height:64px;font-size:20px">제출 · Отправить</button><p class="status" id="sendstat"></p>`;
+    app.innerHTML = `<div class="done-mark">${CHECK}</div>
+      <h1>거의 끝났어요! 고마워요.<br><span class="ru" style="font-size:22px">Почти готово! Спасибо!</span></h1>
+      <div class="card ru-first">
+        <h3>1. 제출하기 · Отправь ответы</h3>
+        <p class="ru">Нажми «Отправить». Твои ответы попадут к учителю.</p>
+        <p>[제출]을 누르면 답이 선생님께 가요.</p>
+        ${sentBlock}
+        <div id="fallback"></div>
+      </div>
+      <div class="card ru-first">
+        <h3>2. 소리 내어 읽고 음성 메시지 보내기 · Прочитай вслух</h3>
+        <p class="ru">Нажми «읽을 글 복사 · Скопировать текст» и вставь текст в чат с учителем в KakaoTalk. Потом <b>нажми и держи кнопку микрофона</b> и прочитай вслух: сначала слова, потом текст. Отпусти кнопку, и голосовое сообщение отправится.</p>
+        <p>[읽을 글 복사]를 누르고 카카오톡 선생님 채팅창에 붙여 넣어 보내요. 그다음 <b>마이크 버튼을 꾹 누른 채</b> 낱말부터 글까지 소리 내어 읽어요. 손을 떼면 음성 메시지가 가요.</p>
+        <button class="btn" data-act="copyread">읽을 글 복사 · Скопировать текст</button>
+        <p class="status" id="readstat"></p>
+        <p class="note">천천히, 아는 만큼 읽으면 돼요. 모르는 낱말은 건너뛰어도 괜찮아요. · Читай спокойно. Если слово не знаешь, можно пропустить.</p>
+      </div>`;
+    setFoot(S.sent ? '' : prevBtn(), '');
+  }
+};
+
+/* ---------- 채점 ---------- */
+function score(r){
+  const right = id => r.ans[id] === ITEMS[id].a;
+  const skip = id => r.ans[id] === SKIP;
+  const cnt = ids => ids.filter(right).length;
+  const v = cnt(['B-1','B-2','B-3','B-4','B-5']), s = cnt(['B-6','B-7','B-8','B-9','B-10']);
+  const listen = r.version==='A'?'g':'n', read = r.version==='A'?'n':'g';
+  const L = cnt(idsOf(listen)), R = cnt(idsOf(read)), L2 = cnt(idsOf('d')), R2 = cnt(idsOf('r'));
+  const rq = cnt(['R-1','R-2']);
+  const mismatch = (L===2 && R<=1) || (R===2 && L<=1);
+  const lt = r.recheck ? L+L2 : L, rt = r.recheck ? R+R2 : R;
+  const good = x => x >= (r.recheck ? 3 : 2);
+  const noSnd = r.noSound && (r.noSound[listen] || r.noSound.d);
+  let hl;
+  if(noSnd) hl = '소리가 나지 않아 듣기 결과는 참고만 해요';
+  else if(good(lt) && !good(rt)) hl = '들으면 이해하지만 읽으면 뜻을 놓쳐요 → 읽기 유창성 지원이 먼저';
+  else if(!good(lt) && !good(rt)) hl = '듣기와 읽기 모두 어려워요 → 어휘·문장 지원이 먼저';
+  else if(good(rt) && !good(lt)) hl = '읽으면 이해하지만 듣기에서 놓쳐요 → 듣기 상황(집중, 소리)을 한 번 더 살펴보기';
+  else hl = '짧은 이야기는 듣기·읽기 모두 이해해요 → 문장 길이 사다리에서 막힌 구조를 다음 목표로';
+  let route;
+  if(v>=4 && s>=4) route = {lvl:'ok', text:'3단계 5개 영역으로 진행'};
+  else if(v>=4) route = {lvl:'mid', text:'3단계 어휘(V1)만 짧게 확인, 학습은 2단계 문장부터'};
+  else if(s>=4) route = {lvl:'mid', text:'3단계 문장(S1)만 짧게 확인, 학습은 2단계 어휘부터'};
+  else route = {lvl:'warn', text:'2단계부터 학습'};
+  let lad = 0; for(const id of ['L-1','L-2','L-3','L-4']){ if(right(id)) lad++; else break; }
+  const sec = r.readSec;
+  let line;
+  if(sec!=null && sec<5) line = '글을 너무 빨리 넘김 (녹음으로 읽기 확인 필요)';
+  else if(sec!=null && sec>40 && rq===2) line = '읽기는 느렸지만 내용은 이해함';
+  else if(sec!=null && sec>40) line = '읽는 데 시간이 걸리고 내용을 놓침';
+  else if(rq<2) line = '빨리 읽었지만 내용 질문을 틀림 (어휘·문장 확인 필요)';
+  else line = '짧은 글을 읽고 내용을 이해함';
+  const skips = Object.keys(r.ans).filter(skip).length;
+  return {v,s,L,R,L2,R2,rq,mismatch,hl,route,lad,line,skips,right};
+}
+
+/* ---------- 결과 코드 ---------- */
+function encodeResult(r){
+  const o = {v:1,id:r.id,n:r.name,ver:r.version,t:r.started,sec:r.readSec!=null?Math.round(r.readSec):null,a:r.ans,rc:r.recheck?1:0,pl:r.plays,ns:Object.keys(r.noSound).filter(k=>r.noSound[k])};
+  const bytes = new TextEncoder().encode(JSON.stringify(o));
+  let bin=''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function decodeResult(code){
+  const bin = atob(String(code).trim());
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const o = JSON.parse(new TextDecoder().decode(bytes));
+  const ns = {}; (o.ns||[]).forEach(k => ns[k]=true);
+  return {id:o.id||'', name:o.n||'', version:o.ver, started:o.t, readSec:o.sec, ans:o.a||{}, recheck:!!o.rc, noSound:ns, plays:o.pl||{}};
+}
+
+/* ---------- 분석 (학생 제출 때와 선생님 화면에서 같이 씀) ---------- */
+function makeReport(r){
+  const sc = score(r);
+  const optLabel = (it,c) => c===SKIP ? '모르겠어요' : c==null ? '-' : NUM[c] + (it.o[c].text ? ' '+it.o[c].text : '');
+  const wrong = ORDER.filter(id => r.ans[id]!=null && !sc.right(id)).map(id => {
+    const it = ITEMS[id], c = r.ans[id];
+    return {id, label:optLabel(it,c), meaning: c===SKIP ? '모른다고 답함' : (it.w[String(c)] || it.d || '내용을 놓침')};
+  });
+  const ladderWrong = ['L-1','L-2','L-3','L-4'].filter(id => !sc.right(id)).map(id => ({id, chose:optLabel(ITEMS[id], r.ans[id]), structure:ITEMS[id].st, meaning: r.ans[id]===SKIP?'모른다고 답함':(ITEMS[id].w[String(r.ans[id])]||ITEMS[id].d)}));
+  const listenStory = r.version==='A'?'g':'n';
+  return {id:r.id, name:r.name, version:r.version, date:new Date(r.started||Date.now()).toISOString().slice(0,10),
+    readSec:r.readSec, rq:sc.rq, line:sc.line, v:sc.v, s:sc.s, route:sc.route, lad:sc.lad, ladderWrong,
+    L:sc.L, R:sc.R, L2:sc.L2, R2:sc.R2, recheck:r.recheck, hl:sc.hl, skips:sc.skips, wrong,
+    plays:r.plays||{}, listenStory, raw:r, oral:{wrong:[],wrongE:[],sec:null,style:''}};
+}
+function submitPayload(){
+  const rep = makeReport(S);
+  const answers = {};
+  ORDER.forEach(id => { const a = S.ans[id]; answers[id] = a==null ? '' : a===SKIP ? '모름' : (a+1) + (a===ITEMS[id].a ? '' : ' ✗'); });
+  return {
+    action:'submit', id:S.id, name:S.name, version: S.version==='A'?'가형':'나형',
+    readSec: rep.readSec, rq: rep.rq, v: rep.v, s: rep.s, route: rep.route.text,
+    ladder: 'L-'+rep.lad, listen: rep.L, read: rep.R,
+    listen2: rep.recheck ? rep.L2 : '', read2: rep.recheck ? rep.R2 : '',
+    plays: (rep.plays[rep.listenStory]||0) + (rep.recheck ? ' / 확인 '+(rep.plays.d||0) : ''),
+    skips: rep.skips, line: rep.line, hl: rep.hl,
+    wrong: rep.wrong.map(x => `${x.id} ${x.label}: ${x.meaning}`).join('\n'),
+    answers, code: encodeResult(S)
+  };
+}
+async function postJSON(body){
+  const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify(body)});
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error||'error');
+  return j;
+}
+
+/* ---------- 선생님 화면 ---------- */
+let tkey = ''; try{ tkey = localStorage.getItem('tkey')||''; }catch(e){}
+let listCache = null, listState = 'idle', oralMap = {};
+function oralResult(r){
+  const o = r.oral; if(!o || (o.sec==null && !o.wrong.length && !o.style)) return null;
+  const byG = [0,1,2].map(g => 5 - o.wrong.filter(i => Math.floor(i/5)===g).length);
+  const slow = o.style==='글자' || (o.sec!=null && o.sec>40);
+  let type='다', name='비교적 유창함';
+  if(byG[1] <= 2){ type='가'; name='해독이 어려움'; }
+  else if(slow){ type='나'; name='읽기는 되지만 느림'; }
+  let line;
+  if(type==='가') line = '받침 낱말에서 자주 멈춤 (' + o.wrong.filter(i=>i>=5).map(i=>CARD_WORDS[i]).join(', ') + ')';
+  else if(slow && r.rq===2) line = '소리 내어 읽기는 느렸지만 내용은 이해함';
+  else if(slow) line = '읽는 데 힘을 쓰느라 내용을 놓침';
+  else if(r.rq<2) line = '정확히 읽었지만 내용 질문을 틀림 (어휘·문장 확인 필요)';
+  else line = '비교적 유창하게 읽고 내용을 이해함';
+  return {byG,type,name,line,words:o.wrong.map(i=>CARD_WORDS[i])};
+}
+function renderTeacher(){
+  const app = $('#app');
+  if(tview==='report') return renderReport(app, curReport);
+  setBar('결과 모아 보기');
+  let list = '';
+  if(!configured()) list = '<p class="status">아직 구글 시트와 연결되지 않았어요. index.html 맨 위의 SCRIPT_URL에 Apps Script 주소를 넣어 주세요.</p>';
+  else if(listState==='loading') list = '<p class="status">불러오는 중…</p>';
+  else if(listState==='err') list = '<p class="status">불러오지 못했어요. 선생님 키가 맞는지, 인터넷이 연결되어 있는지 확인해 주세요.</p>';
+  else if(listState==='ok' && !listCache.length) list = '<p class="status">아직 제출한 학생이 없어요.</p>';
+  else if(listState==='ok') list = '<div style="display:flex;flex-direction:column;gap:8px">' + listCache.map((r,i) => { const o = oralMap[r.id]; return `<button class="item" data-act="open" data-i="${i}">
+      <span><b>${esc(r.name||'이름 없음')}</b> <span class="note">${esc(r.time||'')}</span></span>
+      <span class="row">${o?`<span class="pill">읽기 ${esc(o.type||'')}</span>`:'<span class="pill warn">녹음 기록 전</span>'}<span class="pill">어휘 ${esc(r.v)}/5 · 문장 ${esc(r.s)}/5</span></span></button>`; }).join('') + '</div>';
+  app.innerHTML = `<h2>선생님 화면</h2>
+    <div class="card"><h3>구글 시트에서 불러오기</h3>
+      <div class="row"><label class="f" for="tkey" style="flex:1;min-width:200px">선생님 키 <span class="note">Apps Script 코드에 정한 비밀번호</span><input id="tkey" type="text" value="${esc(tkey)}" autocomplete="off"></label>
+      <button class="btn primary" data-act="load" style="align-self:flex-end">불러오기</button></div>
+      <p class="note">결과는 구글 시트 ‘결과’ 탭에도 자동으로 쌓여요. 여기서는 아이를 눌러 자세한 분석을 보고, 녹음을 들으며 기록할 수 있어요.</p></div>
+    <h3>제출한 학생</h3>${list}
+    <details class="card"><summary><b>코드로 열기</b> <span class="note">(인터넷이 안 될 때 아이가 보낸 코드를 붙여 넣기)</span></summary>
+      <textarea id="paste" placeholder="<<...>>"></textarea>
+      <div class="row"><button class="btn" data-act="import">결과 보기</button></div><p class="status" id="impstat"></p></details>`;
+  setFoot('<button class="btn" data-act="tostudent">학생 화면 보기</button>','');
+}
+async function loadList(){
+  listState='loading'; renderTeacher();
+  try{
+    const res = await fetch(SCRIPT_URL + '?action=list&key=' + encodeURIComponent(tkey));
+    const j = await res.json();
+    if(!j.ok) throw new Error(j.error);
+    listCache = j.results || []; oralMap = j.oral || {};
+    listState='ok';
+  }catch(e){ listState='err'; }
+  renderTeacher();
+}
+function oralCard(r){
+  const o = r.oral;
+  const res = oralResult(r);
+  const EO = PASSAGE.split(' ');
+  return `<div class="card"><h3>녹음 듣고 기록하기 (소리 내어 읽기)</h3>
+    <p class="note">아이가 보낸 음성 메시지를 들으면서 <b>틀리게 읽거나 3초 넘게 멈춘</b> 낱말과 어절을 눌러요. 글을 읽은 시간도 적어 주세요.</p>
+    ${[0,1,2].map(g=>`<p class="note">${GROUPS[g]}</p><div class="row">${CARD_WORDS.slice(g*5,g*5+5).map((w,j)=>{const i=g*5+j;return `<button class="btn skip" data-act="ow" data-i="${i}" aria-pressed="${o.wrong.includes(i)}">${w}</button>`;}).join('')}</div>`).join('')}
+    <p class="note">짧은 글 (틀린 어절 ${o.wrongE.length} / 15)</p>
+    <div class="row">${EO.map((e,i)=>`<button class="btn skip" style="min-height:40px;padding:4px 10px" data-act="oe" data-i="${i}" aria-pressed="${o.wrongE.includes(i)}">${esc(e)}</button>`).join('')}</div>
+    <div class="row"><label class="f" for="osec" style="flex:0 0 200px">글 읽은 시간 (초)<input id="osec" type="text" inputmode="numeric" value="${o.sec??''}"></label>
+      <div class="f">읽는 모습<div class="row">${['글자','낱말','문장'].map(x=>`<button class="btn skip" data-act="ostyle" data-v="${x}" aria-pressed="${o.style===x}">${x==='글자'?'글자 하나씩':x==='낱말'?'낱말 단위':'문장 단위로 자연스럽게'}</button>`).join('')}</div></div></div>
+    ${res ? `<p><span class="pill ${res.type==='가'?'warn':res.type==='다'?'ok':''}">읽기 유형 ${res.type} · ${res.name}</span></p><p style="font-size:18px">${esc(res.line)}</p>
+      <p class="note">낱말 ${res.byG.join(' / ')} (받침 없음 / 있음 / 소리 바뀜, 각 5개 중)</p>` : '<p class="note">기록하면 읽기 유형(가·나·다)과 종합 한 줄이 나와요.</p>'}
+    <label class="f" for="memo">메모<textarea id="memo">${esc(r.note||'')}</textarea></label>
+    <div class="row"><button class="btn primary" data-act="saveoral"${configured()?'':' disabled'}>녹음 기록을 시트에 저장</button><span class="status" id="savestat"></span></div></div>`;
+}
+function renderReport(app, r){
+  setBar('결과 · ' + (r.name||''));
+  const rc = r.route.lvl==='ok'?'ok':r.route.lvl==='warn'?'warn':'';
+  app.innerHTML = `
+  <div class="row" style="justify-content:space-between"><h2>${esc(r.name||'이름 없음')}</h2><span class="status">${esc(r.date)} · ${r.version==='A'?'가형':'나형'}</span></div>
+  <div class="tiles">
+    <div class="tile"><span class="k">어휘 B-1~5</span><span class="v">${r.v} / 5</span></div>
+    <div class="tile"><span class="k">문장 B-6~10</span><span class="v">${r.s} / 5</span></div>
+    <div class="tile"><span class="k">‘모르겠어요’</span><span class="v">${r.skips}</span></div>
+    <div class="tile"><span class="k">다음 단계</span><span class="pill ${rc}" style="font-size:15px">${esc(r.route.text)}</span></div>
+  </div>
+  <div class="card"><h3>종합</h3><p style="font-size:19px">${esc(r.line)}</p><p>${esc(r.hl)}</p></div>
+  <div class="card"><h3>짧은 글 속으로 읽기</h3>
+    <div class="wrap"><table><tbody>
+      <tr><th>읽은 시간</th><td>${r.readSec!=null? r.readSec+'초':'-'} <span class="note">(15어절, 임시 기준 40초)</span></td></tr>
+      <tr><th>내용 질문</th><td>${r.rq} / 2</td></tr>
+    </tbody></table></div></div>
+  <div class="card"><h3>문장 길이 사다리</h3><p>연속으로 맞힌 문장: L-${r.lad} 까지</p>
+    ${r.ladderWrong.length ? `<div class="wrap"><table><thead><tr><th>문항</th><th>고른 답</th><th>새로 붙은 구조</th><th>오답이 알려 주는 것</th></tr></thead><tbody>
+    ${r.ladderWrong.map(x=>`<tr><td>${x.id}</td><td>${esc(x.chose)}</td><td>${esc(x.structure)}</td><td>${esc(x.meaning)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">4문항 모두 맞혔어요.</p>'}</div>
+  <div class="card"><h3>듣기·읽기 비교</h3>
+    <div class="wrap"><table><thead><tr><th></th><th>듣기</th><th>읽기</th></tr></thead><tbody>
+      <tr><td>처음 이야기</td><td>${r.L} / 2</td><td>${r.R} / 2</td></tr>
+      ${r.recheck?`<tr><td>확인 이야기</td><td>${r.L2} / 2</td><td>${r.R2} / 2</td></tr>`:''}
+    </tbody></table></div>
+    <p class="note">이야기 들은 횟수: 처음 ${r.plays[r.listenStory]||0}번${r.recheck?`, 확인 ${r.plays.d||0}번`:''} (두 번 듣기 안내)</p></div>
+  <div class="card"><h3>틀리거나 ‘모르겠어요’ 한 문항</h3>
+    ${r.wrong.length ? `<div class="wrap"><table><thead><tr><th>문항</th><th>답</th><th>알려 주는 것</th></tr></thead><tbody>
+    ${r.wrong.map(x=>`<tr><td>${x.id}</td><td>${esc(x.label)}</td><td>${esc(x.meaning)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">없어요.</p>'}</div>
+  ${oralCard(r)}`;
+  setFoot('<button class="btn" data-act="tlist">목록으로</button>', '');
+}
+function keepTeacherInputs(){
+  if(!curReport) return;
+  const m=$('#memo'); if(m) curReport.note=m.value;
+  const s=$('#osec'); if(s){ const v=parseFloat(s.value); curReport.oral.sec = isNaN(v)?null:Math.round(v); }
+}
+async function saveOral(){
+  keepTeacherInputs();
+  const r = curReport, o = r.oral, res = oralResult(r), st = $('#savestat');
+  st.textContent = '저장하는 중…';
+  try{
+    await postJSON({action:'oral', key:tkey, id:r.id, name:r.name,
+      wrongWords: o.wrong.map(i=>CARD_WORDS[i]).join(', '),
+      groups: res ? res.byG.join(' / ') : '', sec: o.sec ?? '', wrongE: o.wrongE.length + ' / 15',
+      style: o.style==='글자'?'글자 하나씩':o.style==='낱말'?'낱말 단위':o.style==='문장'?'문장 단위':'',
+      type: res ? res.type+' ('+res.name+')' : '', line: res ? res.line : '', note: r.note||'',
+      raw: JSON.stringify({wrong:o.wrong, wrongE:o.wrongE, sec:o.sec, style:o.style})});
+    oralMap[r.id] = {type: res ? res.type : '', raw: {wrong:o.wrong, wrongE:o.wrongE, sec:o.sec, style:o.style}, note:r.note};
+    $('#savestat').textContent = '시트의 ‘녹음 기록’ 탭에 저장했어요.';
+  }catch(e){ $('#savestat').textContent = '저장하지 못했어요. 선생님 키와 인터넷 연결을 확인해 주세요.'; }
+}
+function openFromCode(code, extra){
+  const r = makeReport(decodeResult(code));
+  const prev = extra && extra.raw;
+  if(prev){ r.oral = {wrong:prev.wrong||[], wrongE:prev.wrongE||[], sec:prev.sec??null, style:prev.style||''}; r.note = extra.note||''; }
+  curReport = r; tview='report'; render();
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const act = b.dataset.act;
+  if(act==='dlgclose'){ closeDialog(); return; }
+  if(act==='teacher'){ mode='teacher'; try{ location.hash='teacher'; }catch(e){} tview='list'; render(); if(tkey && configured() && listState==='idle') loadList(); return; }
+  if(act==='tostudent'){ mode='student'; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} S=null; render(); return; }
+  if(act==='load'){ tkey = ($('#tkey')||{}).value.trim(); try{ localStorage.setItem('tkey', tkey); }catch(e){} if(configured()) loadList(); else renderTeacher(); return; }
+  if(act==='open'){ const r = listCache[+b.dataset.i]; try{ openFromCode(r.code, oralMap[r.id]); }catch(e){ showDialog('열 수 없어요','이 결과의 코드가 손상되었어요.'); } return; }
+  if(act==='import'){
+    const txt = ($('#paste')||{}).value || '';
+    const m = txt.match(/<<([A-Za-z0-9+/=\s]+?)>>/) || txt.match(/([A-Za-z0-9+/=]{40,})/);
+    try{ openFromCode((m?m[1]:'').replace(/\s/g,'')); }catch(e){ $('#impstat').textContent='코드를 읽지 못했어요. 전체를 붙여 넣었는지 확인해 주세요.'; }
+    return;
+  }
+  if(act==='tlist'){ tview='list'; render(); return; }
+  if(act==='saveoral'){ await saveOral(); return; }
+  if(act==='ow' || act==='oe' || act==='ostyle'){
+    keepTeacherInputs();
+    const o = curReport.oral;
+    if(act==='ostyle') o.style = b.dataset.v;
+    else { const arr = act==='ow' ? o.wrong : o.wrongE, i=+b.dataset.i, k=arr.indexOf(i); k<0?arr.push(i):arr.splice(k,1); }
+    const y = window.scrollY; renderReport($('#app'), curReport); window.scrollTo(0,y); return;
+  }
+  if(!S) return;
+  const st = steps[si];
+  if(act==='prev'){ collect(); if(si>0){ si--; while(si>0 && (steps[si].k==='checkpoint' || steps[si].k==='passage')) si--; } render(); return; }
+  if(act==='next'){ collect(); if(si<steps.length-1) si++; render(); return; }
+  if(act==='readdone'){ S.readSec = (Date.now()-S.readStart)/1000; si++; render(); return; }
+  if(act==='pick'){ S.ans[st.id] = +b.dataset.i; render(); return; }
+  if(act==='soundtest'){ if(!say('소리가 잘 들려요? 그럼 다음을 누르세요.')) showDialog('소리가 나지 않아요 · Нет звука','선생님께 말해 주세요.<br><span class="ru">Скажи учителю.</span>'); return; }
+  if(act==='play'){ const s=b.dataset.s; S.plays[s]=(S.plays[s]||0)+1; render(); if(!say(DATA.stories[s])){ S.noSound[s]=true; render(); showDialog('소리가 나지 않아요 · Нет звука','선생님께 말해 주세요. 지금은 [문제 풀기]를 눌러 넘어가도 돼요.<br><span class="ru">Скажи учителю. Сейчас можно нажать «К вопросам».</span>'); } return; }
+  if(act==='nosound'){ S.noSound[b.dataset.s]=true; render(); return; }
+  if(act==='sayq'){ say(ITEMS[b.dataset.id].q); return; }
+  if(act==='submit'){
+    b.disabled = true; $('#sendstat').textContent = '보내는 중… · Отправляю…';
+    try{
+      if(!configured()) throw new Error('not configured');
+      await postJSON(submitPayload());
+      S.sent = true; render();
+    }catch(e){
+      b.disabled = false;
+      $('#sendstat').textContent = '보내지 못했어요. 인터넷을 확인하고 다시 눌러 주세요. · Не получилось. Проверь интернет и нажми ещё раз.';
+      const code = `[한국어 읽기 진단 결과]\n이름: ${S.name||'-'}\n<<${encodeResult(S)}>>`;
+      $('#fallback').innerHTML = `<details><summary class="note">계속 안 되면 · Если снова не получается</summary>
+        <p class="note">아래 글을 복사해 카카오톡으로 선생님께 보내요. · Скопируй текст ниже и отправь учителю в KakaoTalk.</p>
+        <textarea readonly>${esc(code)}</textarea></details>`;
+    }
+    return;
+  }
+  if(act==='copyread'){
+    const t = `[소리 내어 읽기 · Прочитай вслух]\n${CARD_WORDS.join('  ')}\n\n${PASSAGE}`;
+    try{ await navigator.clipboard.writeText(t); $('#readstat').textContent='복사했어요! 카카오톡에 붙여 넣어요. · Скопировано!'; }
+    catch(e){ $('#readstat').innerHTML = '아래 글을 직접 복사해요. · Скопируй текст:<br><textarea readonly>'+esc(t)+'</textarea>'; }
+    return;
+  }
+});
+document.addEventListener('change', ev => { if(ev.target.id==='osec' && curReport){ keepTeacherInputs(); const y=window.scrollY; renderReport($('#app'), curReport); window.scrollTo(0,y); } });
+function collect(){ const nm=$('#nm'); if(nm && S) S.name = nm.value.trim(); }
+window.addEventListener('hashchange', () => { const m = location.hash==='#teacher' ? 'teacher' : 'student'; if(m!==mode){ mode=m; render(); } });
+if('speechSynthesis' in window){ try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => {}; }catch(e){} }
+render();
+if(mode==='teacher' && tkey && configured()) loadList();
+
+</script>
+</body>
+</html>
