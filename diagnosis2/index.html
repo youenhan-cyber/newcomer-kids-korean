@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한국어 읽기 진단 2차</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Jua&display=swap">
+<style>
+/* 아이가 자기 휴대폰으로 혼자 푸는 진단. 한 화면에 한 문제, 러시아어 안내를 함께. 선생님 화면은 결과 코드를 모아 보는 곳 */
+:root{
+  --paper:#F4F6F8;
+  --card:#FFFFFF;
+  --ink:#1D2430;
+  --muted:#5A6472;
+  --line:#CDD4DD;
+  --accent:#2F5D8A;
+  --accent-soft:#E2EBF5;
+  --ok:#2E7D4F;
+  --warn:#B4532A;
+  --warn-soft:#FBEDE6;
+  --display:'Jua','Noto Sans KR',sans-serif;
+  --body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;word-break:keep-all;overflow-wrap:break-word}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--accent);color:#fff;font-size:14px}
+.bar.teacher{background:#E6E9ED;color:var(--muted);border-bottom:1px solid var(--line)}
+.prog{flex:1;max-width:260px;height:8px;background:rgba(255,255,255,.3);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:#fff}
+main{max-width:860px;margin:0 auto;padding:20px 16px 130px;display:flex;flex-direction:column;gap:18px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:32px}
+h2{font-size:26px}
+h3{margin:0;font-size:19px}
+p{margin:0}
+.ru{color:#36506B;font-size:17px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.card.ru-first{border-left:6px solid var(--accent)}
+.note{font-size:15px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{min-height:50px;padding:10px 20px;border-radius:12px;border:1.5px solid var(--accent);background:var(--card);color:var(--accent);font-weight:700}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{border-color:var(--warn);color:var(--warn)}
+.btn.skip{border-color:var(--line);color:var(--muted)}
+.btn.skip[aria-pressed=true]{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.btn:disabled{opacity:.4;cursor:default}
+.linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;padding:8px 0;font-size:14px;align-self:flex-start}
+.foot{position:fixed;left:0;right:0;bottom:0;background:rgba(244,246,248,.97);border-top:1px solid var(--line);padding:10px 16px}
+.foot .in{max-width:860px;margin:0 auto;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:500}
+input[type=text],textarea{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-height:50px;font-size:18px}
+textarea{min-height:120px;resize:vertical;font-size:15px;width:100%}
+ul.rules{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.passage{font-size:28px;line-height:2;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:20px 22px}
+.q{font-size:24px;font-weight:700;line-height:1.45;flex:1;min-width:240px}
+.qid{display:inline-block;font-size:14px;color:var(--accent);font-weight:700;margin-right:8px}
+.sent{font-size:25px;line-height:1.7;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:14px 18px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.choice{position:relative;min-height:160px;border:2px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;padding:26px 8px 8px}
+.choice .n{position:absolute;top:6px;left:10px;font-size:20px;font-weight:700}
+.choice img{max-width:100%;height:130px;object-fit:contain}
+.choice svg{width:170px;height:128px}
+.choice .t{font-size:26px;font-weight:700}
+.choice.textonly{min-height:84px}
+.choice.textonly .t{font-size:22px}
+.choice[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);background:#F7FAFD}
+.speak{display:inline-flex;align-items:center;gap:8px}
+.speak svg{width:22px;height:22px}
+.bigplay{min-height:90px;font-size:22px;padding:14px 28px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tile .k{font-size:14px;color:var(--muted)}
+.tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:14px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:#E3F2E9;color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500}
+.wrap{overflow-x:auto}
+.item{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;min-height:56px;flex-wrap:wrap}
+.status{font-size:14px;color:var(--muted)}
+.dialog{position:fixed;inset:0;background:rgba(29,36,48,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.dialog .card{max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.done-mark{width:72px;height:72px;border-radius:50%;background:#E3F2E9;color:var(--ok);display:flex;align-items:center;justify-content:center}
+@media (max-width:560px){
+  .choice{min-height:130px}
+  .choice img{height:100px}
+  .choice svg{width:130px;height:98px}
+  .q{font-size:21px}
+  .sent{font-size:21px}
+  .passage{font-size:23px}
+  h1{font-size:27px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="bar" class="bar"></div>
+<main id="app"></main>
+<div id="foot" class="foot" hidden><div class="in" id="footin"></div></div>
+<div id="dlg"></div>
+<script>
+/* ===== 설정: 1차 진단과 같은 Apps Script 웹 앱 주소 ===== */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypZnamT4PqDSvKF0M3LChfn3dDYHEq_s0bhOmoINVSvL4nF5aCpHNg1GCD3Sr4NGWr/exec';
+/* ======================================================= */
+
+/* 2차 진단: 1차(기초)를 어휘·문장 각각 80점 이상으로 통과한 아이용.
+   고학년 교과서에서 막히는 네 가지를 봐요. 영역마다 5문항, 4개(80점) 이상이면 그 영역 통과. */
+const AREAS = {
+  V:{name:'교과 어휘', ru:'Слова из учебника', ids:['V-1','V-2','V-3','V-4','V-5'],
+     start:'교과서 학습 어휘(까닭·차례·비교하다·관찰하다·정리하다 등)를 예문과 함께 익히기'},
+  S:{name:'긴 문장', ru:'Длинные предложения', ids:['S-1','S-2','S-3','S-4','S-5'],
+     start:'연결하는 말(-아서/-어서, -지만, -기 전에, -면)과 꾸며 주는 말이 든 긴 문장 끊어 읽기'},
+  P:{name:'문단 읽기', ru:'Чтение текста', ids:['P-1','P-2','P-3','P-4','P-5'],
+     start:'3~5문장 글을 읽고 누가·무엇을·왜 찾기 → 중심 내용 한 문장으로 말하기'},
+  D:{name:'교과서 지시문', ru:'Задания в учебнике', ids:['D-1','D-2','D-3','D-4','D-5'],
+     start:'교과서·평가지 지시문(○표 하시오, 선으로 이으시오, 물음에 답하시오, 차례대로) 익히기'}
+};
+const PASSAGES = {
+  ant:'개미는 땅속에 집을 짓고 함께 살아요. 개미 집에는 여러 개의 방이 있어요. 어떤 방에는 먹이를 모아 두고, 어떤 방에서는 알을 키워요. 그래서 개미 집은 작은 마을과 같아요.',
+  jiwoo:'지우는 친구 생일 선물로 직접 그린 그림을 준비했어요. 그런데 학교에 가는 길에 그림이 비에 젖었어요. 지우는 속상해서 눈물이 났어요. 그때 친구가 “괜찮아. 네 마음이 더 고마워.”라고 말했어요.'
+};
+const DATA = [
+  /* 교과 어휘: 예문 속에서 뜻 찾기 */
+  {id:'V-1', area:'V', sent:'물이 얼음이 된 까닭을 알아보아요.', q:'‘까닭’과 뜻이 비슷한 말은 무엇인가요?',
+   o:['차례','이유','결과','장소'], a:1, w:{0:'‘차례’와 헷갈림 (교과 어휘끼리 구분이 안 됨)',2:'원인과 결과를 구분하지 못함',3:'낱말 뜻을 모름'}},
+  {id:'V-2', area:'V', sent:'이야기의 차례에 맞게 그림을 놓아 보세요.', q:'‘차례’와 뜻이 비슷한 말은 무엇인가요?',
+   o:['순서','제목','이유','모양'], a:0, w:{2:'‘까닭’과 헷갈림',1:'낱말 뜻을 모름',3:'낱말 뜻을 모름'}},
+  {id:'V-3', area:'V', sent:'두 그림을 비교해 보세요.', q:'‘비교하다’는 무슨 뜻인가요?',
+   o:['똑같이 따라 그리다','같은 점과 다른 점을 살펴보다','예쁘게 색칠하다','크게 소리 내어 읽다'], a:1, w:{0:'‘비교’를 ‘따라 하기’로 앎',2:'그림이라는 말에만 반응함',3:'낱말 뜻을 모름'}},
+  {id:'V-4', area:'V', sent:'강낭콩이 자라는 모습을 관찰해요.', q:'‘관찰하다’는 무슨 뜻인가요?',
+   o:['물을 주다','빨리 먹다','자세히 살펴보다','친구에게 주다'], a:2, w:{0:'식물 기르기 장면만 떠올림 (낱말 뜻은 모름)',1:'강낭콩(음식)에만 반응함',3:'낱말 뜻을 모름'}},
+  {id:'V-5', area:'V', sent:'글을 읽고 중요한 내용을 정리해요.', q:'‘정리하다’는 여기에서 무슨 뜻인가요?',
+   o:['처음부터 다시 쓰다','큰 소리로 읽다','그림을 그리다','중요한 것만 모아서 짧게 쓰다'], a:3, w:{0:'‘정리’를 ‘베껴 쓰기’로 앎',1:'‘읽고’라는 말에만 반응함',2:'낱말 뜻을 모름'}},
+  /* 긴 문장: 연결하는 말과 꾸며 주는 말 */
+  {id:'S-1', area:'S', st:'-아서/-어서 (까닭)', sent:'어제 밤늦게까지 숙제를 해서 오늘 아침에 늦게 일어났어요.', q:'왜 늦게 일어났어요?',
+   o:['아침을 많이 먹어서','비가 와서','밤늦게까지 숙제를 해서','학교가 멀어서'], a:2, w:{0:'‘-아서/-어서’(까닭)를 놓침',1:'‘-아서/-어서’(까닭)를 놓침',3:'‘-아서/-어서’(까닭)를 놓침'}},
+  {id:'S-2', area:'S', st:'-지만 (반대)', sent:'민수는 키가 작지만 달리기는 반에서 제일 빨라요.', q:'민수는 어떤 아이예요?',
+   o:['키가 작고 달리기가 느려요','키가 작지만 달리기가 빨라요','키가 크고 달리기가 빨라요','키가 크지만 달리기가 느려요'], a:1, w:{0:'‘-지만’(반대)을 놓침',2:'앞부분(키가 작다)을 놓침',3:'문장 전체를 거꾸로 이해함'}},
+  {id:'S-3', area:'S', st:'꾸며 주는 말 (엄마가 사 온 사과)', sent:'엄마가 어제 시장에서 사 온 사과를 동생이 다 먹었어요.', q:'사과를 먹은 사람은 누구예요?',
+   o:['엄마','시장 아저씨','나','동생'], a:3, w:{0:'꾸며 주는 말 속 사람(엄마)을 먹은 사람으로 착각',1:'‘시장’이라는 말에만 반응함',2:'문장에 없는 사람을 고름'}},
+  {id:'S-4', area:'S', st:'-기 전에 / -은 후에 (차례)', sent:'점심을 먹기 전에 손을 씻고, 점심을 먹은 후에 이를 닦아요.', q:'가장 먼저 하는 일은 무엇이에요?',
+   o:['손 씻기','점심 먹기','이 닦기','낮잠 자기'], a:0, w:{1:'‘-기 전에’를 놓치고 먼저 나온 낱말을 고름',2:'‘-은 후에’를 놓침',3:'문장에 없는 일을 고름'}},
+  {id:'S-5', area:'S', st:'-면 (조건) + 꾸며 주는 말', sent:'비가 많이 오면 운동장에서 하는 체육 수업은 강당에서 해요.', q:'비가 많이 오는 날, 체육 수업은 어디에서 해요?',
+   o:['운동장','강당','교실','수영장'], a:1, w:{0:'‘-면’(조건)을 놓치고 앞에 나온 장소를 고름',2:'문장에 없는 장소를 고름',3:'비 → 물(수영장)로 연결함'}},
+  /* 문단 읽기: 글을 보면서 답해요 */
+  {id:'P-1', area:'P', psg:'ant', q:'개미는 어디에 집을 지어요?', o:['나무 위','땅속','물속','사람 집 안'], a:1, w:{0:'글에서 찾지 못함 (세부 내용)',2:'글에서 찾지 못함 (세부 내용)',3:'글에서 찾지 못함 (세부 내용)'}},
+  {id:'P-2', area:'P', psg:'ant', q:'개미 집의 방에서는 무엇을 해요?', o:['잠만 자요','친구와 놀아요','비를 피해요','먹이를 모아 두고 알을 키워요'], a:3, w:{0:'글에 없는 내용을 고름',1:'글에 없는 내용을 고름',2:'글에 없는 내용을 고름'}},
+  {id:'P-3', area:'P', psg:'ant', q:'이 글은 무엇에 대한 글인가요?', o:['개미 집의 모습','개미가 좋아하는 먹이','개미의 색깔','작은 마을에 사는 사람들'], a:0, w:{1:'한 부분(먹이)을 중심 내용으로 착각',2:'글에 없는 내용을 고름',3:'비유(마을과 같아요)를 글자 그대로 이해함'}},
+  {id:'P-4', area:'P', psg:'jiwoo', q:'지우는 왜 속상했어요?', o:['친구가 화를 내서','선물을 잃어버려서','그림이 비에 젖어서','친구 생일을 잊어버려서'], a:2, w:{0:'글에 없는 까닭을 고름',1:'‘젖었다’와 ‘잃어버렸다’를 구분하지 못함',3:'생일이라는 말에만 반응함'}},
+  {id:'P-5', area:'P', psg:'jiwoo', q:'친구의 말은 어떤 뜻인가요?', o:['선물을 준비한 지우의 마음이 고마워요','그림을 다시 그려 오세요','그림이 젖어서 싫어요','비가 와서 기뻐요'], a:0, w:{1:'친구의 마음(위로)을 읽지 못함',2:'말 속의 마음을 반대로 읽음',3:'글의 상황을 놓침'}},
+  /* 교과서 지시문 */
+  {id:'D-1', area:'D', sent:'알맞은 낱말에 ○표 하시오.', q:'무엇을 하라는 말인가요?', o:['낱말에 밑줄을 그어요','낱말에 동그라미를 그려요','낱말을 지워요','낱말을 소리 내어 읽어요'], a:1, w:{0:'○표와 밑줄을 구분하지 못함',2:'지시문을 이해하지 못함',3:'지시문을 이해하지 못함'}},
+  {id:'D-2', area:'D', sent:'그림과 어울리는 낱말을 선으로 이어 보세요.', q:'무엇을 하라는 말인가요?', o:['그림에 색칠해요','낱말을 따라 써요','그림을 오려요','그림과 낱말 사이에 줄을 그어요'], a:3, w:{0:'‘선으로 잇다’를 모름',1:'‘선으로 잇다’를 모름',2:'‘선으로 잇다’를 모름'}},
+  {id:'D-3', area:'D', sent:'글을 읽고 물음에 답하시오.', q:'무엇을 하라는 말인가요?', o:['글을 그대로 베껴 써요','물을 마셔요','질문에 대한 대답을 써요','글의 제목을 바꿔요'], a:2, w:{0:'‘물음에 답하다’를 모름',1:'‘물음’을 ‘물’로 앎',3:'지시문을 이해하지 못함'}},
+  {id:'D-4', area:'D', sent:'‘크다’와 뜻이 반대인 낱말을 고르시오.', q:'어떤 낱말을 골라야 하나요?', o:['커다랗다','무겁다','작다','많다'], a:2, w:{0:'‘반대’를 ‘비슷한 뜻’으로 앎',1:'‘반대’의 뜻을 모름',3:'‘반대’의 뜻을 모름'}},
+  {id:'D-5', area:'D', sent:'일이 일어난 차례대로 번호를 쓰시오.', q:'무엇을 하라는 말인가요?', o:['글을 세 번 읽어요','마음에 드는 문장에 번호를 써요','글자 수를 세어요','먼저 일어난 일부터 1, 2, 3을 써요'], a:3, w:{0:'‘차례대로’를 모름',1:'‘차례대로’를 모름',2:'지시문을 이해하지 못함'}}
+];
+const ITEMS = Object.fromEntries(DATA.map(i => [i.id, i]));
+const ORDER = DATA.map(i => i.id);
+const NUM = ['①','②','③','④'];
+const CHECK = '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg>';
+const SKIP = -1;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const configured = () => /^https:\/\/script\.google\.com\//.test(SCRIPT_URL);
+
+let nameFromUrl = ''; try{ nameFromUrl = new URLSearchParams(location.search).get('n') || ''; }catch(e){}
+let S = { id:'Q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), name:nameFromUrl, started:Date.now(), ans:{}, sent:false };
+let steps = [{k:'welcome'}], si = 0;
+['V','S','P','D'].forEach(k => { steps.push({k:'part', area:k}); AREAS[k].ids.forEach(id => steps.push({k:'item', id})); });
+steps.push({k:'finish'});
+
+function setBar(label){
+  const pct = Math.round(si/(steps.length-1)*100);
+  $('#bar').className='bar';
+  $('#bar').innerHTML = '<span>'+esc(label)+'</span><span class="prog" aria-hidden="true"><i style="width:'+pct+'%"></i></span>';
+}
+function setFoot(left, right){
+  const f = $('#foot');
+  if(!left && !right){ f.hidden = true; return; }
+  f.hidden = false;
+  $('#footin').innerHTML = '<div class="row">'+(left||'')+'</div><div class="row">'+(right||'')+'</div>';
+}
+const prevBtn = () => '<button class="btn" data-act="prev"'+(si===0?' disabled':'')+'>이전 · Назад</button>';
+const nextBtn = (ok=true, label='다음 · Дальше') => '<button class="btn primary" data-act="next"'+(ok?'':' disabled')+'>'+label+'</button>';
+
+const STU = {
+  welcome(app){
+    setBar('시작 · Начало');
+    app.innerHTML = `
+    <h1>한국어 읽기 확인 2<br><span class="ru" style="font-size:22px">Проверка чтения по-корейски, часть 2</span></h1>
+    <div class="card ru-first" lang="ru">
+      <p>Ты хорошо сделал(а) первую часть! Теперь задания чуть сложнее: слова и предложения из учебника.</p>
+      <ul class="rules">
+        <li>Отвечай честно и сам(а): без помощи, без переводчика и без подсказок.</li>
+        <li>Если не знаешь ответ, нажми <b>«모르겠어요 · Не знаю»</b> и иди дальше. Это нормально!</li>
+        <li>Не угадывай. Честное «Не знаю» помогает нам больше, чем случайный ответ.</li>
+        <li>Звук не нужен. Это займёт примерно 15–20 минут. В конце нажми «Отправить».</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p><b>1차를 잘했어요! 이번에는 교과서에 나오는 낱말과 문장이에요.</b></p>
+      <ul class="rules">
+        <li>혼자서 정직하게 풀어요. 번역기나 다른 사람의 도움 없이요.</li>
+        <li>모르면 <b>[모르겠어요]</b>를 누르고 넘어가요. 괜찮아요!</li>
+        <li>찍지 마세요. 정직하게 “모르겠어요”라고 해야 나에게 맞는 공부를 찾을 수 있어요.</li>
+        <li>소리는 필요 없어요. 15~20분쯤 걸려요.</li>
+      </ul>
+    </div>
+    <label class="f" for="nm">이름을 한글로 쓰세요 · Напиши своё имя по-корейски (хангылем)<input id="nm" type="text" autocomplete="off" value="${esc(S.name)}"></label>`;
+    setFoot('', nextBtn(true,'시작 · Начать'));
+  },
+  part(app, st){
+    const A = AREAS[st.area];
+    const tip = {
+      V:['문장 속 낱말의 뜻을 골라요.','Выбери значение слова в предложении.'],
+      S:['긴 문장을 끝까지 읽고 답해요.','Прочитай длинное предложение до конца и ответь.'],
+      P:['짧은 글을 읽고 답해요. 글은 계속 보여요.','Прочитай короткий текст и ответь. Текст будет виден.'],
+      D:['교과서에 나오는 말이에요. 무엇을 하라는 말인지 골라요.','Это задания из учебника. Выбери, что нужно сделать.']
+    }[st.area];
+    setBar(A.name + ' · ' + A.ru);
+    app.innerHTML = `<h1>${A.name}<br><span class="ru" style="font-size:22px">${A.ru}</span></h1>
+      <div class="card ru-first"><p class="ru">${tip[1]}</p><p>${tip[0]}</p>
+      <p class="note">모르면 [모르겠어요] · Если не знаешь, нажми «Не знаю».</p></div>`;
+    setFoot(prevBtn(), nextBtn());
+  },
+  item(app, st){
+    const it = ITEMS[st.id];
+    setBar(AREAS[it.area].name + ' · ' + it.id);
+    let top = '';
+    if(it.psg) top = `<div class="passage" style="font-size:22px;line-height:1.9">${esc(PASSAGES[it.psg])}</div>`;
+    else if(it.sent) top = `<div class="sent">${esc(it.sent)}</div>`;
+    const a = S.ans[it.id];
+    app.innerHTML = top + `<p class="q"><span class="qid">${it.id}</span>${esc(it.q)}</p>
+      <div class="choices">${it.o.map((o,i)=>`<button class="choice textonly" data-act="pick" data-i="${i}" aria-pressed="${a===i}" aria-label="${i+1}번">
+        <span class="n">${NUM[i]}</span><span class="t">${esc(o)}</span></button>`).join('')}</div>
+      <button class="btn skip" data-act="pick" data-i="-1" aria-pressed="${a===SKIP}">모르겠어요 · Не знаю</button>`;
+    setFoot(prevBtn(), nextBtn(a!=null));
+  },
+  finish(app){
+    setBar('끝 · Готово');
+    const sentBlock = S.sent
+      ? `<p class="pill ok" style="font-size:16px">보냈어요 · Отправлено</p>`
+      : `<button class="btn primary" data-act="submit" style="min-height:64px;font-size:20px">제출 · Отправить</button><p class="status" id="sendstat"></p>`;
+    app.innerHTML = `<div class="done-mark">${CHECK}</div>
+      <h1>다 했어요! 고마워요.<br><span class="ru" style="font-size:22px">Всё! Спасибо!</span></h1>
+      <div class="card ru-first">
+        <p class="ru">Нажми «Отправить». Твои ответы попадут к учителю.</p>
+        <p>[제출]을 누르면 답이 선생님께 가요.</p>
+        ${sentBlock}
+        <div id="fallback"></div>
+      </div>`;
+    setFoot(S.sent ? '' : prevBtn(), '');
+  }
+};
+
+/* ---------- 채점 ---------- */
+function score(r){
+  const right = id => r.ans[id] === ITEMS[id].a;
+  const by = {};
+  Object.keys(AREAS).forEach(k => { const n = AREAS[k].ids.filter(right).length; by[k] = {n, pts:n*20, pass:n>=4}; });
+  const allPass = Object.values(by).every(x => x.pass);
+  const weak = Object.keys(AREAS).filter(k => !by[k].pass);
+  const verdict = allPass ? '2차 통과 · 교과서 읽기 도전' : weak.length===4 ? '중급 학습: 전 영역 (교과 어휘부터 차례로)' : '중급 학습: ' + weak.map(k => AREAS[k].name).join('·') + ' 중심';
+  const start = allPass
+    ? '교과서 단원 글을 직접 읽으며 어휘·긴 문장 미리 익히기 (교과 연계 학습)'
+    : weak.map(k => AREAS[k].name + ' → ' + AREAS[k].start).join('\n');
+  const total = Math.round(Object.values(by).reduce((t,x)=>t+x.n,0) / ORDER.length * 100);
+  const skips = ORDER.filter(id => r.ans[id] === SKIP).length;
+  const wrong = ORDER.filter(id => r.ans[id]!=null && !right(id)).map(id => {
+    const it = ITEMS[id], c = r.ans[id];
+    const label = c===SKIP ? '모르겠어요' : NUM[c]+' '+it.o[c];
+    return `${id} ${label}: ${c===SKIP ? '모른다고 답함' : (it.w[c] || '내용을 놓침')}${it.st ? ' ['+it.st+']' : ''}`;
+  });
+  return {by, allPass, verdict, start, total, skips, wrong};
+}
+function encodeResult(r){
+  const bytes = new TextEncoder().encode(JSON.stringify({v:2,id:r.id,n:r.name,t:r.started,a:r.ans}));
+  let bin=''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function submitPayload(){
+  const sc = score(S);
+  const answers = {};
+  ORDER.forEach(id => { const a = S.ans[id]; answers[id] = a==null ? '' : a===SKIP ? '모름' : (a+1) + (a===ITEMS[id].a ? '' : ' ✗'); });
+  const f = k => sc.by[k].pts + '점 (' + sc.by[k].n + '/5)';
+  return {action:'submit2', id:S.id, name:S.name, verdict:sc.verdict,
+    V:f('V'), S:f('S'), P:f('P'), D:f('D'), total:sc.total, start:sc.start, skips:sc.skips,
+    minutes: Math.round((Date.now()-S.started)/60000), wrong: sc.wrong.join('\n'), answers, code: encodeResult(S)};
+}
+async function postJSON(body){
+  const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify(body)});
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error||'error');
+  return j;
+}
+
+function render(){ STU[steps[si].k]($('#app'), steps[si]); window.scrollTo(0,0); }
+function collect(){ const nm=$('#nm'); if(nm) S.name = nm.value.trim(); }
+
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const act = b.dataset.act, st = steps[si];
+  if(act==='prev'){ collect(); if(si>0) si--; render(); return; }
+  if(act==='next'){ collect(); if(si<steps.length-1) si++; render(); return; }
+  if(act==='pick'){ S.ans[st.id] = +b.dataset.i; render(); return; }
+  if(act==='submit'){
+    b.disabled = true; $('#sendstat').textContent = '보내는 중… · Отправляю…';
+    try{
+      if(!configured()) throw new Error('not configured');
+      await postJSON(submitPayload());
+      S.sent = true; render();
+    }catch(e){
+      b.disabled = false;
+      $('#sendstat').textContent = '보내지 못했어요. 인터넷을 확인하고 다시 눌러 주세요. · Не получилось. Проверь интернет и нажми ещё раз.';
+      const code = `[한국어 읽기 진단 2차 결과]\n이름: ${S.name||'-'}\n<<${encodeResult(S)}>>`;
+      $('#fallback').innerHTML = `<details><summary class="note">계속 안 되면 · Если снова не получается</summary>
+        <p class="note">아래 글을 복사해 카카오톡으로 선생님께 보내요. · Скопируй текст ниже и отправь учителю в KakaoTalk.</p>
+        <textarea readonly>${esc(code)}</textarea></details>`;
+    }
+    return;
+  }
+});
+render();
+</script>
+</body>
+</html>

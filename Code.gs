@@ -1,5 +1,5 @@
 /**
- * 한국어 읽기 진단 1·2단계 — 구글 시트 저장용 Apps Script
+ * 한국어 읽기 진단 (1차 + 2차) — 구글 시트 저장용 Apps Script
  *
  * 1. 아래 TEACHER_KEY를 선생님만 아는 비밀번호로 바꾸세요.
  * 2. 배포 > 새 배포 > 유형: 웹 앱
@@ -8,6 +8,8 @@
  * 3. 나온 웹 앱 주소(https://script.google.com/macros/s/.../exec)를
  *    index.html 맨 위 SCRIPT_URL에 붙여 넣으세요.
  *
+ * 코드를 바꾼 뒤에는: 배포 > 배포 관리 > 연필(수정) > 버전: 새 버전 > 배포  (주소는 그대로예요)
+ *
  * 아이들의 제출은 키 없이 저장되고, 목록 보기와 녹음 기록 저장은 TEACHER_KEY가 있어야 돼요.
  */
 const TEACHER_KEY = '여기에-비밀번호';
@@ -15,7 +17,7 @@ const TEACHER_KEY = '여기에-비밀번호';
 const TABS = {
   results: {
     name: '결과',
-    headers: ['제출 시각','ID','이름','듣기 순서','짧은 글 읽은 시간(초)','내용 질문(/2)','어휘(/5)','문장(/5)','다음 단계',
+    headers: ['제출 시각','ID','이름','판정','어휘 점수','문장 점수','전체 점수','듣기 순서','짧은 글 읽은 시간(초)','내용 질문(/2)','어휘(/5)','문장(/5)','다음 단계',
       '문장 사다리','듣기(/2)','읽기(/2)','확인 듣기(/2)','확인 읽기(/2)','이야기 들은 횟수','모르겠어요 개수','종합','듣기·읽기 해석','틀린 문항과 의미','코드']
   },
   answers: {
@@ -25,6 +27,14 @@ const TABS = {
   oral: {
     name: '녹음 기록',
     headers: ['기록 시각','ID','이름','틀린 낱말','낱말 (받침 없음 / 있음 / 소리 바뀜)','글 읽은 시간(초)','틀린 어절','읽는 모습','읽기 유형','종합 한 줄','메모','원자료']
+  },
+  results2: {
+    name: '2차 결과',
+    headers: ['제출 시각','ID','이름','2차 판정','교과 어휘','긴 문장','문단 읽기','교과서 지시문','전체 점수','학습 출발점','모르겠어요 개수','걸린 시간(분)','틀린 문항과 의미','코드']
+  },
+  answers2: {
+    name: '2차 문항별 답',
+    headers: ['제출 시각','ID','이름','V-1','V-2','V-3','V-4','V-5','S-1','S-2','S-3','S-4','S-5','P-1','P-2','P-3','P-4','P-5','D-1','D-2','D-3','D-4','D-5']
   }
 };
 
@@ -36,6 +46,11 @@ function sheet_(key) {
     sh = ss.insertSheet(t.name);
     sh.getRange(1, 1, 1, t.headers.length).setValues([t.headers]).setFontWeight('bold').setBackground('#E2EBF5');
     sh.setFrozenRows(1);
+  } else {
+    const cur = sh.getRange(1, 1, 1, t.headers.length).getValues()[0];
+    if (cur.join('|') !== t.headers.join('|')) {
+      sh.getRange(1, 1, 1, t.headers.length).setValues([t.headers]).setFontWeight('bold').setBackground('#E2EBF5');
+    }
   }
   return sh;
 }
@@ -52,11 +67,19 @@ function doPost(e) {
     const now = new Date();
 
     if (d.action === 'submit') {
-      sheet_('results').appendRow([now, d.id, d.name, d.version, d.readSec, d.rq, d.v, d.s, d.route,
+      sheet_('results').appendRow([now, d.id, d.name, d.verdict, d.vScore, d.sScore, d.total, d.version, d.readSec, d.rq, d.v, d.s, d.route,
         d.ladder, d.listen, d.read, d.listen2, d.read2, d.plays, d.skips, d.line, d.hl, d.wrong, d.code]);
       const a = d.answers || {};
       const ids = TABS.answers.headers.slice(3);
       sheet_('answers').appendRow([now, d.id, d.name].concat(ids.map(function (id) { return a[id] || ''; })));
+      return json_({ ok: true });
+    }
+
+    if (d.action === 'submit2') {
+      sheet_('results2').appendRow([now, d.id, d.name, d.verdict, d.V, d.S, d.P, d.D, d.total, d.start, d.skips, d.minutes, d.wrong, d.code]);
+      const a2 = d.answers || {};
+      const ids2 = TABS.answers2.headers.slice(3);
+      sheet_('answers2').appendRow([now, d.id, d.name].concat(ids2.map(function (id) { return a2[id] || ''; })));
       return json_({ ok: true });
     }
 
@@ -90,7 +113,7 @@ function doGet(e) {
     rs.getRange(2, 1, rs.getLastRow() - 1, TABS.results.headers.length).getValues().forEach(function (r) {
       results.push({
         time: Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
-        id: r[1], name: r[2], v: r[6], s: r[7], code: r[19]
+        id: r[1], name: r[2], verdict: r[3], v: r[10], s: r[11], code: r[23]
       });
     });
   }
