@@ -183,7 +183,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const configured = () => /^https:\/\/script\.google\.com\//.test(SCRIPT_URL);
 
-let nameFromUrl = ''; try{ nameFromUrl = new URLSearchParams(location.search).get('n') || ''; }catch(e){}
+let nameFromUrl = '', fromId = ''; try{ const q = new URLSearchParams(location.search); nameFromUrl = q.get('n') || ''; fromId = q.get('from') || ''; }catch(e){}
 let S = { id:'Q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), name:nameFromUrl, started:Date.now(), ans:{}, xans:{}, tm:{}, extraAdded:false, sent:false };
 let steps = [{k:'welcome'}], si = 0;
 ['V','S','P','D'].forEach(k => { steps.push({k:'part', area:k}); AREAS[k].ids.forEach(id => steps.push({k:'item', id})); });
@@ -200,6 +200,9 @@ function setFoot(left, right){
   if(!left && !right){ f.hidden = true; return; }
   f.hidden = false;
   $('#footin').innerHTML = '<div class="row">'+(left||'')+'</div><div class="row">'+(right||'')+'</div>';
+}
+function showDialog(title, html){
+  $('#dlg').innerHTML = '<div class="dialog" role="dialog" aria-modal="true"><div class="card"><h3>'+esc(title)+'</h3><div>'+html+'</div><div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="dlgclose">닫기 · Закрыть</button></div></div></div>';
 }
 const prevBtn = () => '<button class="btn" data-act="prev"'+(si===0?' disabled':'')+'>이전 · Назад</button>';
 const nextBtn = (ok=true, label='다음 · Дальше') => '<button class="btn primary" data-act="next"'+(ok?'':' disabled')+'>'+label+'</button>';
@@ -338,7 +341,7 @@ function submitPayload(){
   const xanswers = {};
   Object.values(EXTRA).flat().forEach(i => { const a = S.xans[i.id]; if(a!=null) xanswers[i.id] = fmt(a, i, i.id); });
   const f = k => sc.by[k].pct + '% ' + sc.by[k].band.t;
-  return {action:'submit2', id:S.id, name:S.name, verdict:sc.verdict,
+  return {action:'submit2', id:S.id, name:S.name, from:fromId, verdict:sc.verdict,
     V:f('V'), S:f('S'), P:f('P'), D:f('D'), total:sc.total, start:sc.start, skips:sc.skips,
     skipList: sc.skipList.join(', '),
     needCheck: sc.needCheck.map(k => AREAS[k].name).join(', '),
@@ -366,7 +369,16 @@ function collect(){ const nm=$('#nm'); if(nm) S.name = nm.value.trim(); }
 document.addEventListener('click', async ev => {
   const b = ev.target.closest('[data-act]'); if(!b) return;
   const act = b.dataset.act, st = steps[si];
+  if(act==='dlgclose'){ $('#dlg').innerHTML=''; return; }
   if(act==='prev'){ collect(); stopTimer(); if(si>0) si--; while(si>0 && steps[si].k==='checkpoint') si--; render(); return; }
+  if(act==='next' && steps[si].k==='welcome'){
+    collect();
+    if(!/[가-힣]/.test(S.name||'')){
+      showDialog('이름을 한글로 쓰세요 · Напиши имя по-корейски',
+        '이름을 <b>한글</b>로 써 주세요. 키보드가 영어나 러시아어로 되어 있으면 한국어로 바꿔요.<br><span class="ru">Напиши своё имя <b>корейскими буквами (хангыль)</b>. Если клавиатура на английском или русском, переключи её на корейский.</span>');
+      return;
+    }
+  }
   if(act==='next'){ collect(); stopTimer(); if(si<steps.length-1) si++; render(); return; }
   if(act==='pick'){ (st.x ? S.xans : S.ans)[st.id] = +b.dataset.i; render(); return; }
   if(act==='submit'){
