@@ -162,7 +162,19 @@ const DATA = [
   {id:'D-4', area:'D', sent:'‘크다’와 뜻이 반대인 낱말을 고르시오.', q:'어떤 낱말을 골라야 하나요?', o:['커다랗다','무겁다','작다','많다'], a:2, w:{0:'‘반대’를 ‘비슷한 뜻’으로 앎',1:'‘반대’의 뜻을 모름',3:'‘반대’의 뜻을 모름'}},
   {id:'D-5', area:'D', sent:'일이 일어난 차례대로 번호를 쓰시오.', q:'무엇을 하라는 말인가요?', o:['글을 세 번 읽어요','마음에 드는 문장에 번호를 써요','글자 수를 세어요','먼저 일어난 일부터 1, 2, 3을 써요'], a:3, w:{0:'‘차례대로’를 모름',1:'‘차례대로’를 모름',2:'지시문을 이해하지 못함'}}
 ];
-const ITEMS = Object.fromEntries(DATA.map(i => [i.id, i]));
+/* 추가 확인 문항 자리: 영역 정답률이 60~79%(5개 중 3개)일 때 이어서 풀어요.
+   기존 문항과 겹치지 않는 같은 영역·비슷한 난이도 5문항. 형식은 DATA와 같고 id는 'VX-1'처럼. */
+const EXTRA = { V: [], S: [], P: [], D: [] };
+const ITEMS = Object.fromEntries(DATA.concat(EXTRA.V, EXTRA.S, EXTRA.P, EXTRA.D).map(i => [i.id, i]));
+/* 정답률 판정 (시범 운영용, 6~10명 결과를 보고 조정) */
+function band(pct){
+  if(pct>=90) return {k:'top', t:'안정적 통과', plan:'다음 단계 학습'};
+  if(pct>=80) return {k:'ok', t:'통과', plan:'다음 단계 학습 + 오답 보완'};
+  if(pct>=60) return {k:'mid', t:'부분 성취', plan:'추가 확인 평가 후 배치'};
+  return {k:'low', t:'기초 보완 필요', plan:'해당 영역의 기초 학습'};
+}
+const pctOf = (n, d) => d ? Math.round(n/d*100) : 0;
+const fmtSec = x => x==null ? '-' : x>=60 ? Math.floor(x/60)+'분 '+Math.round(x%60)+'초' : Math.round(x)+'초';
 const ORDER = DATA.map(i => i.id);
 const NUM = ['①','②','③','④'];
 const CHECK = '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg>';
@@ -172,9 +184,10 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;
 const configured = () => /^https:\/\/script\.google\.com\//.test(SCRIPT_URL);
 
 let nameFromUrl = ''; try{ nameFromUrl = new URLSearchParams(location.search).get('n') || ''; }catch(e){}
-let S = { id:'Q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), name:nameFromUrl, started:Date.now(), ans:{}, sent:false };
+let S = { id:'Q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), name:nameFromUrl, started:Date.now(), ans:{}, xans:{}, tm:{}, extraAdded:false, sent:false };
 let steps = [{k:'welcome'}], si = 0;
 ['V','S','P','D'].forEach(k => { steps.push({k:'part', area:k}); AREAS[k].ids.forEach(id => steps.push({k:'item', id})); });
+steps.push({k:'checkpoint'});
 steps.push({k:'finish'});
 
 function setBar(label){
@@ -233,16 +246,31 @@ const STU = {
   },
   item(app, st){
     const it = ITEMS[st.id];
-    setBar(AREAS[it.area].name + ' · ' + it.id);
+    setBar((st.x ? '추가 · ' : '') + AREAS[it.area].name + ' · ' + it.id);
     let top = '';
     if(it.psg) top = `<div class="passage" style="font-size:22px;line-height:1.9">${esc(PASSAGES[it.psg])}</div>`;
     else if(it.sent) top = `<div class="sent">${esc(it.sent)}</div>`;
-    const a = S.ans[it.id];
+    const a = (st.x ? S.xans : S.ans)[it.id];
     app.innerHTML = top + `<p class="q"><span class="qid">${it.id}</span>${esc(it.q)}</p>
       <div class="choices">${it.o.map((o,i)=>`<button class="choice textonly" data-act="pick" data-i="${i}" aria-pressed="${a===i}" aria-label="${i+1}번">
         <span class="n">${NUM[i]}</span><span class="t">${esc(o)}</span></button>`).join('')}</div>
       <button class="btn skip" data-act="pick" data-i="-1" aria-pressed="${a===SKIP}">모르겠어요 · Не знаю</button>`;
     setFoot(prevBtn(), nextBtn(a!=null));
+  },
+  checkpoint(){
+    if(!S.extraAdded){
+      S.extraAdded = true;
+      const sc = score(S), ex = [];
+      Object.keys(AREAS).forEach(k => { if(sc.by[k].band.k==='mid') EXTRA[k].forEach(i => ex.push({k:'item', id:i.id, x:true})); });
+      if(ex.length) steps.splice(si+1, 0, {k:'more'}, ...ex);
+    }
+    si++; render();
+  },
+  more(app){
+    setBar('조금만 더 · Ещё немного');
+    app.innerHTML = `<h1>조금만 더<br><span class="ru" style="font-size:22px">Ещё немного</span></h1>
+      <div class="card ru-first"><p class="ru">Ещё несколько вопросов. Если не знаешь, нажми «Не знаю».</p><p>문제가 몇 개 더 있어요. 모르면 [모르겠어요]를 눌러요.</p></div>`;
+    setFoot(prevBtn(), nextBtn());
   },
   finish(app){
     setBar('끝 · Готово');
@@ -264,36 +292,61 @@ const STU = {
 /* ---------- 채점 ---------- */
 function score(r){
   const right = id => r.ans[id] === ITEMS[id].a;
+  const tm = r.tm || {};
   const by = {};
-  Object.keys(AREAS).forEach(k => { const n = AREAS[k].ids.filter(right).length; by[k] = {n, pts:n*20, pass:n>=4}; });
+  Object.keys(AREAS).forEach(k => {
+    const ids = AREAS[k].ids, n = ids.filter(right).length, pct = pctOf(n, ids.length);
+    const t = ids.reduce((a,id)=>a+(tm[id]||0),0);
+    by[k] = {n, pct, pass: pct>=80, band: band(pct), sec: t ? Math.round(t) : null, skip: ids.filter(id => r.ans[id]===SKIP)};
+  });
   const allPass = Object.values(by).every(x => x.pass);
-  const weak = Object.keys(AREAS).filter(k => !by[k].pass);
+  const weak = Object.keys(AREAS).filter(k => !by[k].pass);           // 보충 학습 대상 (전체가 80% 넘어도 표시)
+  const needCheck = Object.keys(AREAS).filter(k => by[k].band.k==='mid');
   const verdict = allPass ? '2차 통과 · 교과서 읽기 도전' : weak.length===4 ? '중급 학습: 전 영역 (교과 어휘부터 차례로)' : '중급 학습: ' + weak.map(k => AREAS[k].name).join('·') + ' 중심';
   const start = allPass
     ? '교과서 단원 글을 직접 읽으며 어휘·긴 문장 미리 익히기 (교과 연계 학습)'
     : weak.map(k => AREAS[k].name + ' → ' + AREAS[k].start).join('\n');
-  const total = Math.round(Object.values(by).reduce((t,x)=>t+x.n,0) / ORDER.length * 100);
-  const skips = ORDER.filter(id => r.ans[id] === SKIP).length;
+  const total = pctOf(Object.values(by).reduce((t,x)=>t+x.n,0), ORDER.length);
+  const skipList = ORDER.filter(id => r.ans[id] === SKIP);
   const wrong = ORDER.filter(id => r.ans[id]!=null && !right(id)).map(id => {
     const it = ITEMS[id], c = r.ans[id];
     const label = c===SKIP ? '모르겠어요' : NUM[c]+' '+it.o[c];
     return `${id} ${label}: ${c===SKIP ? '모른다고 답함' : (it.w[c] || '내용을 놓침')}${it.st ? ' ['+it.st+']' : ''}`;
   });
-  return {by, allPass, verdict, start, total, skips, wrong};
+  /* 추가 확인 결과 (최초 결과와 따로) */
+  const xa = r.xans || {};
+  const extra = Object.keys(EXTRA).map(k => {
+    const a = EXTRA[k].filter(i => xa[i.id]!=null);
+    if(!a.length) return null;
+    const n = a.filter(i => xa[i.id]===i.a).length;
+    return {k, name:AREAS[k].name, n, d:a.length, place: n/a.length>=0.8 ? '통과로 배치' : '보충 학습으로 배치'};
+  }).filter(Boolean);
+  const totalSec = r.finished ? Math.round((r.finished - r.started)/1000) : null;
+  return {by, allPass, verdict, start, total, skips: skipList.length, skipList, weak, needCheck, wrong, extra, totalSec};
 }
 function encodeResult(r){
-  const bytes = new TextEncoder().encode(JSON.stringify({v:2,id:r.id,n:r.name,t:r.started,a:r.ans}));
+  const tm = Object.fromEntries(Object.entries(r.tm||{}).map(([k,x])=>[k,Math.round(x)]));
+  const bytes = new TextEncoder().encode(JSON.stringify({v:2,id:r.id,n:r.name,t:r.started,fin:r.finished||null,a:r.ans,xa:r.xans||{},tm}));
   let bin=''; bytes.forEach(b => bin += String.fromCharCode(b));
   return btoa(bin);
 }
 function submitPayload(){
   const sc = score(S);
+  const fmt = (a, it, id) => (a===SKIP ? '모름' : (a+1) + (a===it.a ? '' : ' ✗')) + (S.tm[id] ? ' · ' + Math.round(S.tm[id]) + '초' : '');
   const answers = {};
-  ORDER.forEach(id => { const a = S.ans[id]; answers[id] = a==null ? '' : a===SKIP ? '모름' : (a+1) + (a===ITEMS[id].a ? '' : ' ✗'); });
-  const f = k => sc.by[k].pts + '점 (' + sc.by[k].n + '/5)';
+  ORDER.forEach(id => { const a = S.ans[id]; answers[id] = a==null ? '' : fmt(a, ITEMS[id], id); });
+  const xanswers = {};
+  Object.values(EXTRA).flat().forEach(i => { const a = S.xans[i.id]; if(a!=null) xanswers[i.id] = fmt(a, i, i.id); });
+  const f = k => sc.by[k].pct + '% ' + sc.by[k].band.t;
   return {action:'submit2', id:S.id, name:S.name, verdict:sc.verdict,
     V:f('V'), S:f('S'), P:f('P'), D:f('D'), total:sc.total, start:sc.start, skips:sc.skips,
-    minutes: Math.round((Date.now()-S.started)/60000), wrong: sc.wrong.join('\n'), answers, code: encodeResult(S)};
+    skipList: sc.skipList.join(', '),
+    needCheck: sc.needCheck.map(k => AREAS[k].name).join(', '),
+    weak: sc.weak.length ? sc.weak.map(k => AREAS[k].name).join('·') + ' 집중 보완' : '없음',
+    areaTimes: Object.keys(AREAS).map(k => AREAS[k].name + ' ' + fmtSec(sc.by[k].sec)).join(' · '),
+    minutes: sc.totalSec!=null ? Math.round(sc.totalSec/6)/10 : '',
+    extraResult: sc.extra.map(x => `${x.name} 추가 ${x.n}/${x.d} → ${x.place}`).join(' / '),
+    wrong: sc.wrong.join('\n'), answers, xanswers, code: encodeResult(S)};
 }
 async function postJSON(body){
   const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify(body)});
@@ -302,19 +355,25 @@ async function postJSON(body){
   return j;
 }
 
-function render(){ STU[steps[si].k]($('#app'), steps[si]); window.scrollTo(0,0); }
+function stopTimer(){ if(S._cur){ S.tm[S._cur] = (S.tm[S._cur]||0) + (Date.now()-S._enter)/1000; S._cur = null; } }
+function render(){
+  const cur = steps[si];
+  if(cur.k==='item' && S._cur!==cur.id){ S._cur = cur.id; S._enter = Date.now(); }  // 문항별 응답 시간 재기
+  STU[cur.k]($('#app'), cur); window.scrollTo(0,0);
+}
 function collect(){ const nm=$('#nm'); if(nm) S.name = nm.value.trim(); }
 
 document.addEventListener('click', async ev => {
   const b = ev.target.closest('[data-act]'); if(!b) return;
   const act = b.dataset.act, st = steps[si];
-  if(act==='prev'){ collect(); if(si>0) si--; render(); return; }
-  if(act==='next'){ collect(); if(si<steps.length-1) si++; render(); return; }
-  if(act==='pick'){ S.ans[st.id] = +b.dataset.i; render(); return; }
+  if(act==='prev'){ collect(); stopTimer(); if(si>0) si--; while(si>0 && steps[si].k==='checkpoint') si--; render(); return; }
+  if(act==='next'){ collect(); stopTimer(); if(si<steps.length-1) si++; render(); return; }
+  if(act==='pick'){ (st.x ? S.xans : S.ans)[st.id] = +b.dataset.i; render(); return; }
   if(act==='submit'){
     b.disabled = true; $('#sendstat').textContent = '보내는 중… · Отправляю…';
     try{
       if(!configured()) throw new Error('not configured');
+      if(!S.finished) S.finished = Date.now();
       await postJSON(submitPayload());
       S.sent = true; render();
     }catch(e){
